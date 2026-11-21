@@ -57,7 +57,7 @@ test-watch:
 icons:
     npm run icons
 
-# Integration test in a real VS Code window (needs `code` and a display)
+# Integration test in a real VS Code window (needs `code`, a display and local language extensions)
 test-int: build
     node test/integration/run.mjs
 

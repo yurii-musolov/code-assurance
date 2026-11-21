@@ -145,6 +145,15 @@ just            # all recipes
 `src/core` is plain Node with unit tests in `test/core`; `src/vscode`
 contains the editor integration.
 
+`just test-int` runs the extension in a real VS Code window with a
+throw-away repository and profile. Symbol commands for Python, Go and Rust
+are checked with the language extensions installed in your VS Code
+(`ms-python.python` with Pylance, `golang.go` with gopls,
+`rust-lang.rust-analyzer` with cargo); they are linked into the test
+profile, and a language whose extensions are missing is skipped.
+`VSCODE_EXTENSIONS` points to another extensions folder, `VSCODE_BIN` to
+another editor binary.
+
 ## License
 
 MIT
