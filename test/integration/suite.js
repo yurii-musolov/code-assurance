@@ -53,6 +53,59 @@ async function suite() {
   await vscode.commands.executeCommand('workbench.action.files.revert')
   await sleep(300)
   assert.deepEqual(await statuses(doc), [['confirmed', [7, 9]]], 'confirmed again after revert')
+
+  // Symbol scopes come from the TypeScript language server, which starts
+  // lazily: wait for it before confirming a function and a type.
+  const until = Date.now() + 90_000
+  let symbols
+  while (Date.now() < until) {
+    symbols = await vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', doc.uri)
+    if (symbols && symbols.length > 0) break
+    await sleep(500)
+  }
+  assert.ok(symbols && symbols.length > 0, 'the language server returned symbols')
+  const symbolRecords = async (doc) =>
+    (await api.statusFor(doc)).entries.map((e) => [
+      e.record.kind,
+      e.record.scope ?? null,
+      e.record.symbol ?? null,
+      e.res.status,
+      e.res.range,
+    ])
+
+  editor.selection = new vscode.Selection(7, 4, 7, 4)
+  await runAccepting('codeAssurance.confirmFunction')
+  assert.deepEqual(
+    await symbolRecords(doc),
+    [['symbol', 'function', 'sub', 'confirmed', [7, 9]]],
+    'the function replaces the line confirmation it encloses',
+  )
+
+  editor.selection = new vscode.Selection(13, 4, 13, 4)
+  await runAccepting('codeAssurance.confirmType')
+  assert.deepEqual(
+    await symbolRecords(doc),
+    [
+      ['symbol', 'function', 'sub', 'confirmed', [7, 9]],
+      ['symbol', 'type', 'Box', 'confirmed', [11, 16]],
+    ],
+    'the enclosing class is confirmed',
+  )
+
+  // A changed method body makes the type outdated, the function stays.
+  await edit(doc, (we) => we.replace(doc.uri, doc.lineAt(13).range, '    return this.value + 1'))
+  assert.deepEqual(
+    (await symbolRecords(doc)).map((r) => r[3]),
+    ['confirmed', 'outdated'],
+    'only the edited type is outdated',
+  )
+
+  // Every marks position draws without errors.
+  const config = vscode.workspace.getConfiguration('codeAssurance')
+  for (const position of ['text', 'background', 'gutter']) {
+    await config.update('marks.position', position, vscode.ConfigurationTarget.Global)
+    await sleep(300)
+  }
 }
 
 // The editor's exit code does not reflect the result: write it next to the

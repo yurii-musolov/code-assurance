@@ -2,7 +2,7 @@
 // opens it in a separate profile with this extension loaded from source and
 // runs suite.js. Needs the `code` command and a display.
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -21,7 +21,15 @@ try {
   writeFileSync(
     join(repo, 'a.ts'),
     'import x from "x"\n\nfunction add(a, b) {\n  return a + b\n}\n\n' +
-      'function sub(a, b) {\n  return a - b\n}\n',
+      'function sub(a, b) {\n  return a - b\n}\n\n' +
+      'class Box {\n  value = 1\n  get() {\n    return this.value\n  }\n}\n',
+  )
+  // A fresh profile would open the fixture in restricted mode and ask
+  // whether to trust it; the language servers need a trusted workspace.
+  mkdirSync(join(work, 'profile', 'User'), { recursive: true })
+  writeFileSync(
+    join(work, 'profile', 'User', 'settings.json'),
+    JSON.stringify({ 'security.workspace.trust.enabled': false }),
   )
   git('add', '.')
   git('commit', '-qm', 'fixture')
