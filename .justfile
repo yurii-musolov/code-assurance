@@ -49,6 +49,10 @@ test filter="":
 test-watch:
     npm run test:watch
 
+# Integration test in a real VS Code window (needs `code` and a display)
+test-int: build
+    node test/integration/run.mjs
+
 # Everything CI checks: format, lint, types, tests, bundle
 check: fmt-check lint typecheck test build
 
