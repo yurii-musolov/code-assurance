@@ -19,7 +19,332 @@
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "code review",
+    "assurance",
+    "confirmation",
+    "coverage",
+    "accountability"
+  ],
   "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "codeAssurance.init",
+        "title": "Initialize in this repository",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.confirmLines",
+        "title": "Confirm selected lines",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.confirmFunction",
+        "title": "Confirm enclosing function",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.confirmType",
+        "title": "Confirm enclosing type",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.confirmImpl",
+        "title": "Confirm enclosing impl block",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.confirmModule",
+        "title": "Confirm enclosing module",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.confirmFile",
+        "title": "Confirm whole file",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.reconfirm",
+        "title": "Confirm again",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.revoke",
+        "title": "Withdraw my confirmation",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.actions",
+        "title": "Confirmation actions at cursor…",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.resolve",
+        "title": "Resolve ambiguous confirmation",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.showDiff",
+        "title": "Diff since confirmation",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.pickDiff",
+        "title": "Diff since confirmation (pick)",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.openHistory",
+        "title": "Confirmation history",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.openCommit",
+        "title": "Open confirmation commit on the web",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.reveal",
+        "title": "Go to confirmation",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.reattach",
+        "title": "Move confirmations of a renamed file",
+        "category": "Code Assurance"
+      },
+      {
+        "command": "codeAssurance.refresh",
+        "title": "Refresh",
+        "category": "Code Assurance",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "codeAssurance.hideMarks",
+        "title": "Hide marks in editors",
+        "category": "Code Assurance",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "codeAssurance.showMarks",
+        "title": "Show marks in editors",
+        "category": "Code Assurance",
+        "icon": "$(eye)"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "codeAssurance.editorMenu",
+        "label": "Code Assurance"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "codeAssurance.editorMenu",
+          "group": "1_modification@9",
+          "when": "resourceScheme == file"
+        }
+      ],
+      "codeAssurance.editorMenu": [
+        {
+          "command": "codeAssurance.confirmLines",
+          "group": "1_confirm@1",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "codeAssurance.confirmFunction",
+          "group": "1_confirm@2",
+          "when": "editorLangId =~ /^(javascript|javascriptreact|typescript|typescriptreact|python|go|rust)$/"
+        },
+        {
+          "command": "codeAssurance.confirmType",
+          "group": "1_confirm@3",
+          "when": "editorLangId =~ /^(javascript|javascriptreact|typescript|typescriptreact|python|go|rust)$/"
+        },
+        {
+          "command": "codeAssurance.confirmImpl",
+          "group": "1_confirm@4",
+          "when": "editorLangId == rust"
+        },
+        {
+          "command": "codeAssurance.confirmModule",
+          "group": "1_confirm@5",
+          "when": "editorLangId == rust"
+        },
+        {
+          "command": "codeAssurance.confirmFile",
+          "group": "1_confirm@6"
+        },
+        {
+          "command": "codeAssurance.actions",
+          "group": "2_manage@1"
+        },
+        {
+          "command": "codeAssurance.reconfirm",
+          "group": "2_manage@2"
+        },
+        {
+          "command": "codeAssurance.revoke",
+          "group": "2_manage@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "codeAssurance.confirmFunction",
+          "when": "editorLangId =~ /^(javascript|javascriptreact|typescript|typescriptreact|python|go|rust)$/"
+        },
+        {
+          "command": "codeAssurance.confirmType",
+          "when": "editorLangId =~ /^(javascript|javascriptreact|typescript|typescriptreact|python|go|rust)$/"
+        },
+        {
+          "command": "codeAssurance.confirmImpl",
+          "when": "editorLangId == rust"
+        },
+        {
+          "command": "codeAssurance.confirmModule",
+          "when": "editorLangId == rust"
+        },
+        {
+          "command": "codeAssurance.resolve",
+          "when": "false"
+        },
+        {
+          "command": "codeAssurance.showDiff",
+          "when": "false"
+        },
+        {
+          "command": "codeAssurance.pickDiff",
+          "when": "false"
+        },
+        {
+          "command": "codeAssurance.openHistory",
+          "when": "false"
+        },
+        {
+          "command": "codeAssurance.openCommit",
+          "when": "false"
+        },
+        {
+          "command": "codeAssurance.reveal",
+          "when": "false"
+        },
+        {
+          "command": "codeAssurance.hideMarks",
+          "when": "!codeAssurance.marksHidden"
+        },
+        {
+          "command": "codeAssurance.showMarks",
+          "when": "codeAssurance.marksHidden"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "codeAssurance.hideMarks",
+          "when": "view == codeAssurance.coverage && !codeAssurance.marksHidden",
+          "group": "navigation@1"
+        },
+        {
+          "command": "codeAssurance.showMarks",
+          "when": "view == codeAssurance.coverage && codeAssurance.marksHidden",
+          "group": "navigation@1"
+        },
+        {
+          "command": "codeAssurance.refresh",
+          "when": "view == codeAssurance.coverage",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codeAssurance",
+          "title": "Code Assurance",
+          "icon": "media/activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "codeAssurance": [
+        {
+          "type": "webview",
+          "id": "codeAssurance.filters",
+          "name": "Filters",
+          "when": "codeAssurance.active"
+        },
+        {
+          "id": "codeAssurance.coverage",
+          "name": "Coverage"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "codeAssurance.coverage",
+        "contents": "Open a folder to start confirming code."
+      }
+    ],
+    "configuration": {
+      "title": "Code Assurance",
+      "properties": {
+        "codeAssurance.marks.position": {
+          "type": "string",
+          "enum": [
+            "gutter",
+            "text"
+          ],
+          "default": "gutter",
+          "enumItemLabels": [
+            "Gutter",
+            "Start of line"
+          ],
+          "markdownEnumDescriptions": [
+            "A thin bar at the right edge of the gutter, next to the line numbers, over the breakpoint column. A breakpoint dot on the same line stays visible.",
+            "A bar at the start of each line, inside the text area. The gutter stays free for breakpoints and other extensions."
+          ],
+          "markdownDescription": "Where the vertical bars marking confirmed, outdated and ambiguous code are drawn."
+        }
+      }
+    },
+    "colors": [
+      {
+        "id": "codeAssurance.confirmed",
+        "description": "Marks of confirmed code.",
+        "defaults": {
+          "dark": "#2EA043",
+          "light": "#2EA043",
+          "highContrast": "#3FB950",
+          "highContrastLight": "#1A7F37"
+        }
+      },
+      {
+        "id": "codeAssurance.outdated",
+        "description": "Marks of code changed since it was confirmed.",
+        "defaults": {
+          "dark": "#E36209",
+          "light": "#E36209",
+          "highContrast": "#F0883E",
+          "highContrastLight": "#BC4C00"
+        }
+      },
+      {
+        "id": "codeAssurance.ambiguous",
+        "description": "Marks of confirmed code that exists in several identical copies.",
+        "defaults": {
+          "dark": "#D4A72C",
+          "light": "#BF8700",
+          "highContrast": "#E3B341",
+          "highContrastLight": "#9A6700"
+        }
+      }
+    ]
+  },
   "scripts": {
     "build": "node esbuild.mjs",
     "build:production": "node esbuild.mjs --production",
