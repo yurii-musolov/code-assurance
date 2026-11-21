@@ -12,7 +12,7 @@ export async function appendLine(
 ): Promise<void> {
   const abs = join(rootDir, shardPath(sourcePath, slug))
   await mkdir(dirname(abs), { recursive: true })
-  await appendFile(abs, JSON.stringify(line) + '\n', 'utf8')
+  await appendFile(abs, `${JSON.stringify(line)}\n`, 'utf8')
 }
 
 /** Shards are append-only, so concurrent branches merge by keeping both sides. */
@@ -35,7 +35,7 @@ export async function initStore(rootDir: string): Promise<void> {
   await mkdir(join(rootDir, RECORDS_DIR), { recursive: true })
   const cfg = join(rootDir, CONFIG_FILE)
   if ((await readOr(cfg, null)) === null) {
-    await writeFile(cfg, JSON.stringify({ schemaVersion: 1 }, null, 2) + '\n', 'utf8')
+    await writeFile(cfg, `${JSON.stringify({ schemaVersion: 1 }, null, 2)}\n`, 'utf8')
   }
   const ignore = join(rootDir, IGNORE_FILE)
   if ((await readOr(ignore, null)) === null) await writeFile(ignore, IGNORE_TEMPLATE, 'utf8')
@@ -44,6 +44,6 @@ export async function initStore(rootDir: string): Promise<void> {
   const attrs = (await readOr(attrPath, '')) ?? ''
   if (!attrs.split(/\r?\n/).some((l) => l.trim() === GITATTRIBUTES_LINE)) {
     const sep = attrs === '' || attrs.endsWith('\n') ? '' : '\n'
-    await writeFile(attrPath, attrs + sep + GITATTRIBUTES_LINE + '\n', 'utf8')
+    await writeFile(attrPath, `${attrs}${sep}${GITATTRIBUTES_LINE}\n`, 'utf8')
   }
 }

@@ -2,7 +2,7 @@ import { applyDelta } from './baseline'
 import { LineMap, matchLines } from './diff'
 import { isKnownKind } from './records'
 import { fingerprints, hashLines, hashText, normalizeEol, splitLines } from './text'
-import { CONTEXT_LINES, type AssuranceRecord } from './types'
+import { type AssuranceRecord, CONTEXT_LINES } from './types'
 
 /**
  * - confirmed: the confirmed code is present, unchanged, and we know where;
@@ -60,7 +60,8 @@ export class DocModel {
   }
 
   hash(): string {
-    return (this.wholeHash ??= hashText(this.text))
+    this.wholeHash ??= hashText(this.text)
+    return this.wholeHash
   }
 
   windowHash(start: number, length: number): string | null {

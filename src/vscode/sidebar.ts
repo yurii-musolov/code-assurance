@@ -1,16 +1,16 @@
-import * as vscode from 'vscode'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { fileCoverage, pct, type Coverage } from '../core/coverage'
+import * as vscode from 'vscode'
+import { type Coverage, fileCoverage, pct } from '../core/coverage'
 import { compileIgnore, type IgnoreRules } from '../core/ignore'
 import { IGNORE_FILE, normalizeEmail, STORE_DIR } from '../core/paths'
 import { splitLines } from '../core/text'
 import {
   buildTree,
+  type CoverageValue,
   DEFAULT_FILTER,
   fileMatcher,
   pruneTree,
-  type CoverageValue,
   type TreeFile,
   type TreeFilter,
   type TreeFolder,
@@ -238,12 +238,14 @@ export class CoverageTree implements vscode.TreeDataProvider<Item> {
           (
             root.store.reviewers(this.includer(root)).find((r) => r.email === item.email)?.files ??
             []
-          ).map((f): Item => ({
-            t: 'reviewerFile',
-            root,
-            sourcePath: f.sourcePath,
-            count: f.count,
-          })),
+          ).map(
+            (f): Item => ({
+              t: 'reviewerFile',
+              root,
+              sourcePath: f.sourcePath,
+              count: f.count,
+            }),
+          ),
         )
       case 'missing':
         return this.missing()

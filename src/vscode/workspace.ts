@@ -1,6 +1,6 @@
-import * as vscode from 'vscode'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import * as vscode from 'vscode'
 import { RecordStore } from '../core/store'
 import { fingerprints, splitLines } from '../core/text'
 import type { AssuranceRecord } from '../core/types'
@@ -111,7 +111,7 @@ export class Workspace {
   commitFingerprints(root: Root, commit: string, sourcePath: string): Promise<string[] | null> {
     const key = `${root.rootDir}\0${commit}\0${sourcePath}`
     let hit = this.commitFiles.get(key)
-    if (hit) {
+    if (hit !== undefined) {
       this.commitFiles.delete(key)
       this.commitFiles.set(key, hit)
       return hit

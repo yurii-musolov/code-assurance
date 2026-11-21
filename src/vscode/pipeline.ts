@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
-import { fileCoverage, type Coverage } from '../core/coverage'
+import { type Coverage, fileCoverage } from '../core/coverage'
 import { isKnownKind } from '../core/records'
-import { DocModel, recordBaseline, resolveRecord, type Resolution } from '../core/resolve'
+import { DocModel, type Resolution, recordBaseline, resolveRecord } from '../core/resolve'
 import type { AssuranceRecord } from '../core/types'
 import { logError } from './log'
 import type { Root, Workspace } from './workspace'
@@ -63,7 +63,11 @@ export class StatusPipeline {
         if (e.contentChanges.length > 0) this.schedule(e.document)
       }),
       ws.onDidChange(() => this.refreshAll()),
-      { dispose: () => this.timers.forEach((t) => clearTimeout(t)) },
+      {
+        dispose: () => {
+          for (const t of this.timers.values()) clearTimeout(t)
+        },
+      },
     )
   }
 

@@ -1,29 +1,29 @@
-import * as vscode from 'vscode'
-import * as fs from 'node:fs'
 import { randomUUID } from 'node:crypto'
+import * as fs from 'node:fs'
+import * as vscode from 'vscode'
 import { computeDelta } from '../core/baseline'
 import {
   buildRecord,
   carriedComments,
-  rebaseRange,
-  reattach,
-  supersededBy,
   type Resolved,
+  reattach,
+  rebaseRange,
+  supersededBy,
 } from '../core/confirm'
 import { authorSlug, sameEmail } from '../core/paths'
-import { escapeIcons, isValidSha, commitUrl } from '../core/render'
+import { commitUrl, escapeIcons, isValidSha } from '../core/render'
 import { DocModel } from '../core/resolve'
-import { enclosingSymbol, SCOPE_LABEL, symbolsAtPath, type SymbolNode } from '../core/scopes'
+import { enclosingSymbol, SCOPE_LABEL, type SymbolNode, symbolsAtPath } from '../core/scopes'
 import { fingerprints, normalizeEol, splitLines } from '../core/text'
 import type { AssuranceRecord, Author, Delta, RecordKind, Scope, Tombstone } from '../core/types'
 import { appendLine, initStore } from '../core/writer'
 import { showDiff } from './diff'
 import { headSha, identity, remoteUrl } from './git'
 import { describeScope, openHistory } from './history'
+import { logInfo } from './log'
 import type { Entry, StatusPipeline } from './pipeline'
 import { documentSymbols, documentSymbolsPatiently } from './symbols'
 import type { Root, Workspace } from './workspace'
-import { logInfo } from './log'
 
 const PREFIX = 'Code Assurance'
 const info = (m: string): void => {
@@ -66,7 +66,7 @@ interface ActiveFile {
 
 function activeFile(c: Ctx): ActiveFile | null {
   const editor = vscode.window.activeTextEditor
-  if (!editor || editor.document.uri.scheme !== 'file') {
+  if (editor?.document.uri.scheme !== 'file') {
     info('open a file first.')
     return null
   }
@@ -355,8 +355,8 @@ async function reconfirm(c: Ctx, arg: unknown): Promise<void> {
     await confirm(c, 'file', { supersedeId: r.id })
     return
   }
-  const [s, e] = target.res.range
-  const range = new vscode.Range(s - 1, 0, e - 1, 0)
+  const [first, last] = target.res.range
+  const range = new vscode.Range(first - 1, 0, last - 1, 0)
   editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport)
   if (r.kind === 'symbol' && r.symbol) {
     const symbols = await documentSymbolsPatiently(editor.document)
@@ -371,10 +371,10 @@ async function reconfirm(c: Ctx, arg: unknown): Promise<void> {
   // A run of lines (or a symbol that is gone or duplicated): let the person
   // check the selection, so they confirm exactly what they see.
   editor.selection = new vscode.Selection(
-    s - 1,
+    first - 1,
     0,
-    e - 1,
-    editor.document.lineAt(e - 1).text.length,
+    last - 1,
+    editor.document.lineAt(last - 1).text.length,
   )
   const go = await vscode.window.showInformationMessage(
     `${PREFIX}: adjust the selection if needed, then confirm it.`,
@@ -589,8 +589,8 @@ async function reveal(c: Ctx, id: unknown): Promise<void> {
   const entry = (await c.pipeline.statusFor(opened.editor.document)).entries.find(
     (e) => e.record.id === id,
   )
-  const [s, e] = entry?.res.range ?? [1, 1]
-  const range = new vscode.Range(s - 1, 0, e - 1, 0)
+  const [first, last] = entry?.res.range ?? [1, 1]
+  const range = new vscode.Range(first - 1, 0, last - 1, 0)
   opened.editor.selection = new vscode.Selection(range.start, range.end)
   opened.editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport)
 }

@@ -5,7 +5,7 @@ import { fingerprints, hashText, splitLines } from '../../src/core/text'
 import type { AssuranceRecord } from '../../src/core/types'
 import { rec } from './fixtures'
 
-const fileOf = (...lines: string[]): string => lines.join('\n') + '\n'
+const fileOf = (...lines: string[]): string => `${lines.join('\n')}\n`
 
 /** Confirm `range` of `text`, as if `committed` were the file at HEAD. */
 function confirm(
@@ -175,7 +175,7 @@ describe('file records', () => {
     const r = rec({ kind: 'file', hash: hashText(BASE) })
     delete r.range
     expect(resolve(r, BASE, null).status).toBe('confirmed')
-    expect(resolve(r, BASE + 'x\n', null).status).toBe('outdated')
+    expect(resolve(r, `${BASE}x\n`, null).status).toBe('outdated')
   })
 })
 

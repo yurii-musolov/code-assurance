@@ -144,6 +144,9 @@ just            # all recipes
 
 `src/core` is plain Node with unit tests in `test/core`; `src/vscode`
 contains the editor integration.
+Formatting and linting use [Biome](https://biomejs.dev) (`biome.json`;
+the `biomejs.biome` editor extension applies it on save), types are checked
+by TypeScript 7.
 
 `just test-int` runs the extension in a real VS Code window with a
 throw-away repository and profile. Symbol commands for Python, Go and Rust

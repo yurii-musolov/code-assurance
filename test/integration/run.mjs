@@ -140,7 +140,7 @@ try {
     console.error(`integration test failed (exit ${r.status}):\n${result}`)
     process.exitCode = 1
   } else {
-    console.log(`integration test passed: typescript${languages.map((l) => ', ' + l).join('')}`)
+    console.log(`integration test passed: typescript${languages.map((l) => `, ${l}`).join('')}`)
   }
   if (skipped.length > 0) console.log(`skipped: ${skipped.join('; ')}`)
 } finally {

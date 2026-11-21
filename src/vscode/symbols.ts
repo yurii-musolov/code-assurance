@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { classify, nestSymbols, supportsSymbols, type SymbolNode } from '../core/scopes'
+import { classify, nestSymbols, type SymbolNode, supportsSymbols } from '../core/scopes'
 
 const DECLARATION_CHARS = 400
 

@@ -5,10 +5,10 @@ import {
   commitUrl,
   escapeIcons,
   escapeMd,
+  type HoverEntry,
   hoverMarkdown,
   isValidSha,
   relTime,
-  type HoverEntry,
 } from '../../src/core/render'
 
 const NOW = '2026-01-10T00:00:00Z'

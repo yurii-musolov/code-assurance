@@ -33,11 +33,11 @@ watch:
 typecheck:
     npm run typecheck
 
-# Lint sources and tests
+# Lint everything Biome understands (rules and import order)
 lint:
     npm run lint
 
-# Rewrite files with Prettier
+# Format files, sort imports and apply safe lint fixes
 fmt:
     npm run format
 

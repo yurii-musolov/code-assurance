@@ -3,9 +3,9 @@ import {
   callSiteMarkdown,
   commitUrl,
   HOVER_COMMANDS,
+  type HoverEntry,
   hoverMarkdown,
   isValidSha,
-  type HoverEntry,
 } from '../core/render'
 import { remoteUrl } from './git'
 import { describeScope } from './history'
@@ -26,7 +26,10 @@ export function registerHover(
   const remotes = new Map<string, Promise<string | null>>()
   const remoteFor = (rootDir: string): Promise<string | null> => {
     let r = remotes.get(rootDir)
-    if (!r) remotes.set(rootDir, (r = remoteUrl(rootDir)))
+    if (!r) {
+      r = remoteUrl(rootDir)
+      remotes.set(rootDir, r)
+    }
     return r
   }
 

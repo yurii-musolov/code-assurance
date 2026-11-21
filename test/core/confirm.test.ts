@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   buildRecord,
   carriedComments,
-  rebaseRange,
-  reattach,
-  supersededBy,
   type Resolved,
+  reattach,
+  rebaseRange,
+  supersededBy,
 } from '../../src/core/confirm'
 import { validLine } from '../../src/core/records'
 import { ANN, BOB, rec } from './fixtures'
@@ -91,12 +91,12 @@ describe('buildRecord', () => {
 
 describe('rebaseRange', () => {
   it('follows edits elsewhere', () => {
-    expect(rebaseRange(TEXT, [2, 3], 'x\n' + TEXT)).toEqual([3, 4])
+    expect(rebaseRange(TEXT, [2, 3], `x\n${TEXT}`)).toEqual([3, 4])
   })
 
   it('refuses when the confirmed lines changed or got duplicated', () => {
     expect(rebaseRange(TEXT, [2, 3], 'a\nB\nc\n')).toBeNull()
-    expect(rebaseRange(TEXT, [2, 3], TEXT + 'b\nc\n')).toBeNull()
+    expect(rebaseRange(TEXT, [2, 3], `${TEXT}b\nc\n`)).toBeNull()
   })
 })
 

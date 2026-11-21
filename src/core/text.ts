@@ -31,7 +31,7 @@ export function codeLineNumbers(lines: readonly string[]): number[] {
 }
 
 export function sha256(text: string): string {
-  return 'sha256:' + createHash('sha256').update(text, 'utf8').digest('hex')
+  return `sha256:${createHash('sha256').update(text, 'utf8').digest('hex')}`
 }
 
 /** Content hash of a run of lines. */

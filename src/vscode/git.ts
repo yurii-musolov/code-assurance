@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
-import type { Author } from '../core/types'
 import { isValidSha } from '../core/render'
+import type { Author } from '../core/types'
 
 /** Run git without a shell; null on any failure. */
 export function git(args: string[], cwd: string): Promise<string | null> {

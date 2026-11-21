@@ -1,6 +1,6 @@
+import { sameEmail } from './paths'
 import { captureRange, type Resolution } from './resolve'
 import { hashLines, hashText, splitLines } from './text'
-import { sameEmail } from './paths'
 import type { AssuranceRecord, Author, Delta, RecordKind, Scope, Tombstone } from './types'
 
 export function overlaps(a: [number, number], b: [number, number]): boolean {

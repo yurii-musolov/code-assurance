@@ -18,7 +18,7 @@ async function runAccepting(command) {
   await p
 }
 
-async function edit(doc, fn) {
+async function edit(fn) {
   const we = new vscode.WorkspaceEdit()
   fn(we)
   await vscode.workspace.applyEdit(we)
@@ -88,7 +88,7 @@ async function checkLanguage(api, root, language) {
 
   // Editing the body of the first symbol makes only that one outdated.
   const line = doc.lineAt(steps[0].line - 1)
-  await edit(doc, (we) => we.insert(doc.uri, line.range.end, ' '))
+  await edit((we) => we.insert(doc.uri, line.range.end, ' '))
   assert.deepEqual(
     (await records()).map((r) => r[1]),
     steps.map((_, i) => (i === 0 ? 'outdated' : 'confirmed')),
@@ -102,8 +102,8 @@ async function suite() {
   const ext = vscode.extensions.all.find((e) => e.packageJSON.name === 'code-assurance')
   const api = await ext.activate()
   const root = vscode.workspace.workspaceFolders[0].uri.fsPath
-  const statuses = async (doc) =>
-    (await api.statusFor(doc)).entries.map((e) => [e.res.status, e.res.range])
+  const statuses = async (document) =>
+    (await api.statusFor(document)).entries.map((e) => [e.res.status, e.res.range])
 
   await vscode.commands.executeCommand('codeAssurance.init')
   assert.ok(fs.existsSync(path.join(root, '.code-assurance', 'records')), 'store created')
@@ -114,13 +114,13 @@ async function suite() {
   await runAccepting('codeAssurance.confirmLines')
   assert.deepEqual(await statuses(doc), [['confirmed', [7, 9]]], 'confirmed lines 7-9')
 
-  await edit(doc, (we) => we.insert(doc.uri, new vscode.Position(0, 0), '// 1\n// 2\n// 3\n'))
+  await edit((we) => we.insert(doc.uri, new vscode.Position(0, 0), '// 1\n// 2\n// 3\n'))
   assert.deepEqual(await statuses(doc), [['confirmed', [10, 12]]], 'follows lines added above')
 
-  await edit(doc, (we) => we.replace(doc.uri, doc.lineAt(10).range, '  return b - a'))
+  await edit((we) => we.replace(doc.uri, doc.lineAt(10).range, '  return b - a'))
   assert.deepEqual(await statuses(doc), [['outdated', [10, 12]]], 'outdated where the code is')
 
-  await edit(doc, (we) => we.delete(doc.uri, new vscode.Range(0, 0, 3, 0)))
+  await edit((we) => we.delete(doc.uri, new vscode.Range(0, 0, 3, 0)))
   assert.deepEqual(await statuses(doc), [['outdated', [7, 9]]], 'follows lines removed above')
 
   await vscode.commands.executeCommand('workbench.action.files.revert')
@@ -130,8 +130,8 @@ async function suite() {
   // Symbol scopes come from the TypeScript language server, which starts
   // lazily: wait for it before confirming a function and a type.
   await waitForSymbols(doc, 90_000)
-  const symbolRecords = async (doc) =>
-    (await api.statusFor(doc)).entries.map((e) => [
+  const symbolRecords = async (document) =>
+    (await api.statusFor(document)).entries.map((e) => [
       e.record.kind,
       e.record.scope ?? null,
       e.record.symbol ?? null,
@@ -159,7 +159,7 @@ async function suite() {
   )
 
   // A changed method body makes the type outdated, the function stays.
-  await edit(doc, (we) => we.replace(doc.uri, doc.lineAt(13).range, '    return this.value + 1'))
+  await edit((we) => we.replace(doc.uri, doc.lineAt(13).range, '    return this.value + 1'))
   assert.deepEqual(
     (await symbolRecords(doc)).map((r) => r[3]),
     ['confirmed', 'outdated'],
@@ -180,13 +180,13 @@ async function suite() {
 
 // The editor's exit code does not reflect the result: write it next to the
 // fixture repository for run.mjs to read.
-exports.run = async function () {
+exports.run = async () => {
   const resultFile = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, '..', 'result.txt')
   try {
     await suite()
     fs.writeFileSync(resultFile, 'ok')
   } catch (err) {
-    fs.writeFileSync(resultFile, String((err && err.stack) || err))
+    fs.writeFileSync(resultFile, String(err?.stack || err))
     throw err
   }
 }

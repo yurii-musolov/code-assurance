@@ -6,9 +6,9 @@ import {
   Kind,
   nestSymbols,
   rustItem,
+  type SymbolNode,
   supportsSymbols,
   symbolsAtPath,
-  type SymbolNode,
 } from '../../src/core/scopes'
 
 describe('supportsSymbols', () => {
@@ -106,14 +106,14 @@ describe('nestSymbols', () => {
     nodes.map((n) => (n.children.length ? [n.name, shape(n.children)] : n.name))
 
   it('nests by range containment regardless of list order', () => {
-    const tree = nestSymbols([
+    const nested = nestSymbols([
       flat('get', [9, 11]),
       flat('Box', [7, 12]),
       flat('add', [3, 5]),
       flat('field', [8, 8]),
       flat('main', [14, 14]),
     ])
-    expect(shape(tree)).toEqual(['add', ['Box', ['field', 'get']], 'main'])
+    expect(shape(nested)).toEqual(['add', ['Box', ['field', 'get']], 'main'])
   })
 
   it('keeps siblings that only touch apart', () => {
@@ -121,7 +121,7 @@ describe('nestSymbols', () => {
   })
 
   it('finds the enclosing symbol in a nested flat list', () => {
-    const tree = nestSymbols([flat('Box', [7, 12]), flat('get', [9, 11])])
-    expect(enclosingSymbol(tree, [10, 10])?.path).toBe('Box/get')
+    const nested = nestSymbols([flat('Box', [7, 12]), flat('get', [9, 11])])
+    expect(enclosingSymbol(nested, [10, 10])?.path).toBe('Box/get')
   })
 })

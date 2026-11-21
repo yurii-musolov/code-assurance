@@ -1,5 +1,5 @@
-import * as vscode from 'vscode'
 import { randomUUID } from 'node:crypto'
+import * as vscode from 'vscode'
 import { filtersHtml } from '../core/html'
 import { compilePathFilter, DEFAULT_FILTER, sanitizeFilter, type TreeFilter } from '../core/tree'
 

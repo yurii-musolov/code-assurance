@@ -7,7 +7,7 @@ import { FiltersView } from './filters'
 import { registerHover } from './hover'
 import { initLog, logError } from './log'
 import { Marks } from './marks'
-import { StatusPipeline, type FileStatus } from './pipeline'
+import { type FileStatus, StatusPipeline } from './pipeline'
 import { CoverageTree } from './sidebar'
 import { Workspace } from './workspace'
 
@@ -66,7 +66,7 @@ export async function activate(ext: vscode.ExtensionContext): Promise<Api> {
   }
   let watchers: vscode.Disposable[] = []
   const watch = (): void => {
-    watchers.forEach((w) => w.dispose())
+    for (const w of watchers) w.dispose()
     watchers = ws.roots.map((root) => {
       const w = vscode.workspace.createFileSystemWatcher(
         new vscode.RelativePattern(vscode.Uri.file(root.rootDir), `${RECORDS_DIR}/**/*.jsonl`),
@@ -79,7 +79,11 @@ export async function activate(ext: vscode.ExtensionContext): Promise<Api> {
   }
   watch()
   subs.push(
-    { dispose: () => watchers.forEach((w) => w.dispose()) },
+    {
+      dispose: () => {
+        for (const w of watchers) w.dispose()
+      },
+    },
     { dispose: () => clearTimeout(reloadTimer) },
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       ws.rebuildRoots()

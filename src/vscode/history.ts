@@ -1,6 +1,6 @@
-import * as vscode from 'vscode'
 import { randomUUID } from 'node:crypto'
-import { historyHtml, type HistoryEntry } from '../core/html'
+import * as vscode from 'vscode'
+import { type HistoryEntry, historyHtml } from '../core/html'
 import { normalizeEmail } from '../core/paths'
 import { commitUrl, isValidSha } from '../core/render'
 import type { AssuranceRecord } from '../core/types'

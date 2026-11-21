@@ -1,5 +1,5 @@
+import { type Coverage, rollup } from './coverage'
 import { normalizeEmail } from './paths'
-import { rollup, type Coverage } from './coverage'
 
 export type CoverageValue = Coverage | null | 'pending'
 

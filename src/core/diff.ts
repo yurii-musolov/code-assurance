@@ -150,7 +150,7 @@ function backtrack(
   let y = m
   for (let d = dEnd; d > 0; d--) {
     const snap = trace[d]!
-    const at = (k: number): number => snap[k + d + 1]!
+    const at = (diagonal: number): number => snap[diagonal + d + 1]!
     const k = x - y
     const prevK = k === -d || (k !== d && at(k - 1) < at(k + 1)) ? k + 1 : k - 1
     const prevX = at(prevK)

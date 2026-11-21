@@ -48,7 +48,7 @@ describe('RecordStore', () => {
   it('counts damaged lines', async () => {
     await appendLine(root, 'x.ts', authorSlug(ANN.email), rec())
     const shard = join(root, '.code-assurance/records/x.ts', `${authorSlug(ANN.email)}.jsonl`)
-    await writeFile(shard, (await readFile(shard, 'utf8')) + '=======\n')
+    await writeFile(shard, `${await readFile(shard, 'utf8')}=======\n`)
     const store = new RecordStore(root)
     await store.load()
     expect(store.corruptLines).toBe(1)

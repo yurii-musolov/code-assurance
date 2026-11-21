@@ -1,7 +1,8 @@
-import { readFile, readdir } from 'node:fs/promises'
+import type { Dirent } from 'node:fs'
+import { readdir, readFile } from 'node:fs/promises'
 import { join, relative } from 'node:path'
-import { dedupeById, parseJsonl, resolveChains, type FileState } from './records'
 import { normalizeEmail, RECORDS_DIR, sourcePathOfShard } from './paths'
+import { dedupeById, type FileState, parseJsonl, resolveChains } from './records'
 import type { AssuranceRecord, StoreLine } from './types'
 
 export interface ReviewerSummary {
@@ -120,7 +121,7 @@ export class RecordStore {
 }
 
 async function walk(dir: string): Promise<string[]> {
-  let entries
+  let entries: Dirent[]
   try {
     entries = await readdir(dir, { withFileTypes: true })
   } catch {
