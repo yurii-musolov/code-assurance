@@ -80,7 +80,7 @@ install-ext: package
 uninstall-ext:
     code --uninstall-extension yurii-musolov.code-assurance
 
-# Bump the version (patch | minor | major), commit and tag it
+# Bump the version (patch | minor | major), commit and tag it; push the tag to publish
 release level="patch": check
     npm version {{level}} -m "release: %s"
 

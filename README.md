@@ -166,7 +166,36 @@ are checked with the language extensions installed in your VS Code
 `rust-lang.rust-analyzer` with cargo); they are linked into the test
 profile, and a language whose extensions are missing is skipped.
 `VSCODE_EXTENSIONS` points to another extensions folder, `VSCODE_BIN` to
-another editor binary.
+another editor binary. With `REQUIRE_LANGUAGES=1` a skipped language
+fails the run.
+
+## Continuous integration and releases
+
+GitHub Actions (`.github/workflows`):
+
+- **CI** on every push to `main` and every pull request: format, lint,
+  types, unit tests and the `.vsix` package (kept as a build artifact),
+  `npm audit`, and the integration test in a downloaded VS Code under
+  Xvfb with the Python, Go and Rust extensions installed, where every
+  language is required.
+- **Release** on a `v*` tag: checks the tag against `package.json`, runs
+  the checks again, publishes to the Visual Studio Marketplace and attaches
+  the `.vsix` to a GitHub release.
+
+To release: move the `[Unreleased]` notes in `CHANGELOG.md` under the new
+version, then
+
+```sh
+just release patch       # or minor / major: commit "release: X.Y.Z" and tag vX.Y.Z
+git push --follow-tags   # the tag starts the Release workflow
+```
+
+Publishing needs the repository secret `VSCE_PAT`: an Azure DevOps personal
+access token with the **Marketplace → Manage** scope and **All accessible
+organizations**, created by the owner of the `yurii-musolov` publisher.
+Dependabot proposes weekly updates of npm packages and actions; the VS Code
+and Node.js type packages are raised by hand together with
+`engines.vscode`.
 
 ## License
 
