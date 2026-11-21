@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22272E"/>
+      <stop offset="1" stop-color="#161B22"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#bg)"/>
+  <!-- status bars along the code: confirmed, then outdated -->
+  <rect x="44" y="52" width="14" height="96" rx="7" fill="#2EA043"/>
+  <rect x="44" y="160" width="14" height="44" rx="7" fill="#E36209"/>
+  <!-- lines of code -->
+  <rect x="76" y="56" width="104" height="14" rx="7" fill="#8B949E"/>
+  <rect x="92" y="85" width="120" height="14" rx="7" fill="#8B949E" fill-opacity=".75"/>
+  <rect x="92" y="114" width="72" height="14" rx="7" fill="#8B949E" fill-opacity=".75"/>
+  <rect x="76" y="168" width="56" height="14" rx="7" fill="#8B949E" fill-opacity=".55"/>
+  <rect x="76" y="190" width="40" height="14" rx="7" fill="#8B949E" fill-opacity=".4"/>
+  <!-- seal: confirmed by a person -->
+  <circle cx="186" cy="178" r="46" fill="#2EA043" stroke="#161B22" stroke-width="10"/>
+  <path d="m164 179 15 15 29-31" fill="none" stroke="#FFFFFF" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

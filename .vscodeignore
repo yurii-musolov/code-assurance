@@ -1,6 +1,7 @@
 **
 !dist/extension.js
-!media/**
+!media/*.png
+!media/bar-*.svg
 !package.json
 !README.md
 !CHANGELOG.md

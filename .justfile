@@ -49,6 +49,10 @@ test filter="":
 test-watch:
     npm run test:watch
 
+# Render the PNG icons in media/ from their SVG sources
+icons:
+    npm run icons
+
 # Integration test in a real VS Code window (needs `code` and a display)
 test-int: build
     node test/integration/run.mjs
