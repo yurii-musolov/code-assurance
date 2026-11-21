@@ -307,7 +307,7 @@
             "text",
             "background"
           ],
-          "default": "gutter",
+          "default": "background",
           "enumItemLabels": [
             "Gutter",
             "Start of line",

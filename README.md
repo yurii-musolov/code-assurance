@@ -95,9 +95,9 @@ Files can be left out of coverage with `.code-assurance/ignore`
 
 ## Settings
 
-| Setting                        | Values                             | Default  |
-| ------------------------------ | ---------------------------------- | -------- |
-| `codeAssurance.marks.position` | `gutter` \| `text` \| `background` | `gutter` |
+| Setting                        | Values                             | Default      |
+| ------------------------------ | ---------------------------------- | ------------ |
+| `codeAssurance.marks.position` | `gutter` \| `text` \| `background` | `background` |
 
 - `gutter`: a thin bar at the right edge of the gutter next to the line
   numbers, over the breakpoint column. A breakpoint dot on the same line

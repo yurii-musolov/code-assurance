@@ -12,7 +12,7 @@ const POSITIONS: readonly MarksPosition[] = ['gutter', 'text', 'background']
 
 export function marksPosition(): MarksPosition {
   const v = vscode.workspace.getConfiguration('codeAssurance').get<string>('marks.position')
-  return POSITIONS.find((p) => p === v) ?? 'gutter'
+  return POSITIONS.find((p) => p === v) ?? 'background'
 }
 
 const themeColor = (s: Status): vscode.ThemeColor => new vscode.ThemeColor(`codeAssurance.${s}`)

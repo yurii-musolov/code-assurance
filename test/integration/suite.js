@@ -168,7 +168,7 @@ async function suite() {
 
   // Every marks position draws without errors.
   const config = vscode.workspace.getConfiguration('codeAssurance')
-  for (const position of ['text', 'background', 'gutter']) {
+  for (const position of ['gutter', 'text', 'background']) {
     await config.update('marks.position', position, vscode.ConfigurationTarget.Global)
     await sleep(300)
   }
