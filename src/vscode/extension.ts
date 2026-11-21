@@ -7,13 +7,18 @@ import { FiltersView } from './filters'
 import { registerHover } from './hover'
 import { initLog, logError } from './log'
 import { Marks } from './marks'
-import { StatusPipeline } from './pipeline'
+import { StatusPipeline, type FileStatus } from './pipeline'
 import { CoverageTree } from './sidebar'
 import { Workspace } from './workspace'
 
 const HIDDEN_KEY = 'codeAssurance.marksHidden'
 
-export async function activate(ext: vscode.ExtensionContext): Promise<void> {
+/** Returned from activation for integration tests and other extensions. */
+export interface Api {
+  statusFor(doc: vscode.TextDocument): Promise<FileStatus>
+}
+
+export async function activate(ext: vscode.ExtensionContext): Promise<Api> {
   const subs = ext.subscriptions
   initLog(subs)
   const ws = await Workspace.create()
@@ -118,6 +123,7 @@ export async function activate(ext: vscode.ExtensionContext): Promise<void> {
     await tree.reload()
   })
   paintAll()
+  return { statusFor: (doc) => pipeline.statusFor(doc) }
 }
 
 export function deactivate(): void {}

@@ -27,12 +27,19 @@ export async function documentSymbols(doc: vscode.TextDocument): Promise<SymbolN
   return (result as vscode.DocumentSymbol[]).map((s) => toNode(s, doc))
 }
 
-/** Symbols with one retry, for commands run right after a file was opened. */
+/**
+ * Symbols for commands that need them, waiting a little for a language
+ * server that is still starting (right after a file was opened).
+ */
 export async function documentSymbolsPatiently(
   doc: vscode.TextDocument,
+  timeoutMs = 4000,
 ): Promise<SymbolNode[] | null> {
-  const first = await documentSymbols(doc)
-  if (first || !supportsSymbols(doc.languageId)) return first
-  await new Promise((r) => setTimeout(r, 500))
-  return documentSymbols(doc)
+  if (!supportsSymbols(doc.languageId)) return null
+  const until = Date.now() + timeoutMs
+  for (;;) {
+    const symbols = await documentSymbols(doc)
+    if (symbols || Date.now() >= until) return symbols
+    await new Promise((r) => setTimeout(r, 400))
+  }
 }

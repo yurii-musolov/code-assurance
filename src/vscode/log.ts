@@ -11,3 +11,8 @@ export function initLog(subscriptions: vscode.Disposable[]): void {
 export function logError(scope: string, err: unknown): void {
   channel?.appendLine(`[${new Date().toISOString()}] ${scope}: ${String(err)}`)
 }
+
+/** Messages shown to the person are kept in the log too. */
+export function logInfo(message: string): void {
+  channel?.appendLine(`[${new Date().toISOString()}] ${message}`)
+}

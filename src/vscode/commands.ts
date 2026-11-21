@@ -21,12 +21,19 @@ import { showDiff } from './diff'
 import { headSha, identity, remoteUrl } from './git'
 import { describeScope, openHistory } from './history'
 import type { Entry, StatusPipeline } from './pipeline'
-import { documentSymbolsPatiently } from './symbols'
+import { documentSymbols, documentSymbolsPatiently } from './symbols'
 import type { Root, Workspace } from './workspace'
+import { logInfo } from './log'
 
 const PREFIX = 'Code Assurance'
-const info = (m: string): void => void vscode.window.showInformationMessage(`${PREFIX}: ${m}`)
-const warn = (m: string): void => void vscode.window.showWarningMessage(`${PREFIX}: ${m}`)
+const info = (m: string): void => {
+  logInfo(m)
+  void vscode.window.showInformationMessage(`${PREFIX}: ${m}`)
+}
+const warn = (m: string): void => {
+  logInfo(m)
+  void vscode.window.showWarningMessage(`${PREFIX}: ${m}`)
+}
 
 interface Ctx {
   ext: vscode.ExtensionContext
@@ -151,8 +158,13 @@ async function confirm(c: Ctx, kind: RecordKind, opts: ConfirmOptions = {}): Pro
   // What the person read: text and range are captured before any dialog.
   const snapshot = doc.getText()
   const version = doc.version
-  const needSymbols = kind === 'symbol' || kind === 'lines'
-  const symbols = needSymbols ? await documentSymbolsPatiently(doc) : null
+  // Lines only use symbols to note their container: never wait for them.
+  const symbols =
+    kind === 'symbol'
+      ? await documentSymbolsPatiently(doc)
+      : kind === 'lines'
+        ? await documentSymbols(doc)
+        : null
   if (doc.version !== version) {
     warn('the file changed while starting - try again.')
     return
