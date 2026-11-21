@@ -95,19 +95,24 @@ Files can be left out of coverage with `.code-assurance/ignore`
 
 ## Settings
 
-| Setting                        | Values             | Default  |
-| ------------------------------ | ------------------ | -------- |
-| `codeAssurance.marks.position` | `gutter` \| `text` | `gutter` |
+| Setting                        | Values                             | Default  |
+| ------------------------------ | ---------------------------------- | -------- |
+| `codeAssurance.marks.position` | `gutter` \| `text` \| `background` | `gutter` |
 
 - `gutter`: a thin bar at the right edge of the gutter next to the line
   numbers, over the breakpoint column. A breakpoint dot on the same line
   stays visible.
 - `text`: a bar at the start of each line inside the text area; the gutter
   stays free for breakpoints and other extensions.
+- `background`: a faint tint behind each whole line. The colors are almost
+  transparent, so selections, the current line highlight and search matches
+  stay visible on top of it.
 
-Colors: `codeAssurance.confirmed`, `codeAssurance.outdated`,
-`codeAssurance.ambiguous` (`workbench.colorCustomizations`). The gutter
-bars use fixed colors.
+Colors (`workbench.colorCustomizations`): `codeAssurance.confirmed`,
+`codeAssurance.outdated`, `codeAssurance.ambiguous` for the bars at the
+start of lines and the overview ruler; `codeAssurance.confirmedBackground`,
+`codeAssurance.outdatedBackground`, `codeAssurance.ambiguousBackground` for
+the line background. The gutter bars use fixed colors.
 
 ## Storage
 

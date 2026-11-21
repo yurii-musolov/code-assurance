@@ -299,18 +299,21 @@
           "type": "string",
           "enum": [
             "gutter",
-            "text"
+            "text",
+            "background"
           ],
           "default": "gutter",
           "enumItemLabels": [
             "Gutter",
-            "Start of line"
+            "Start of line",
+            "Line background"
           ],
           "markdownEnumDescriptions": [
             "A thin bar at the right edge of the gutter, next to the line numbers, over the breakpoint column. A breakpoint dot on the same line stays visible.",
-            "A bar at the start of each line, inside the text area. The gutter stays free for breakpoints and other extensions."
+            "A bar at the start of each line, inside the text area. The gutter stays free for breakpoints and other extensions.",
+            "A faint tint behind each whole line. The colors are almost transparent, so selections, the current line highlight and search matches stay visible on top of it. Adjust them with `codeAssurance.confirmedBackground`, `codeAssurance.outdatedBackground` and `codeAssurance.ambiguousBackground`."
           ],
-          "markdownDescription": "Where the vertical bars marking confirmed, outdated and ambiguous code are drawn."
+          "markdownDescription": "How confirmed, outdated and ambiguous code is marked: a bar in the gutter, a bar at the start of each line, or a faint line background."
         }
       }
     },
@@ -343,6 +346,36 @@
           "light": "#BF8700",
           "highContrast": "#E3B341",
           "highContrastLight": "#9A6700"
+        }
+      },
+      {
+        "id": "codeAssurance.confirmedBackground",
+        "description": "Background of confirmed lines when marks are drawn as line background. Keep it nearly transparent so selections stay visible.",
+        "defaults": {
+          "dark": "#2EA04314",
+          "light": "#2EA04312",
+          "highContrast": "#3FB95014",
+          "highContrastLight": "#1A7F3712"
+        }
+      },
+      {
+        "id": "codeAssurance.outdatedBackground",
+        "description": "Background of lines changed since they were confirmed, when marks are drawn as line background.",
+        "defaults": {
+          "dark": "#E3620918",
+          "light": "#E3620914",
+          "highContrast": "#F0883E18",
+          "highContrastLight": "#BC4C0014"
+        }
+      },
+      {
+        "id": "codeAssurance.ambiguousBackground",
+        "description": "Background of confirmed lines that exist in several identical copies, when marks are drawn as line background.",
+        "defaults": {
+          "dark": "#D4A72C18",
+          "light": "#BF870014",
+          "highContrast": "#E3B34118",
+          "highContrastLight": "#9A670014"
         }
       }
     ]

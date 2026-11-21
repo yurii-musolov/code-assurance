@@ -5,15 +5,19 @@ import type { FileStatus } from './pipeline'
 
 const STATUSES: readonly Status[] = ['confirmed', 'outdated', 'ambiguous']
 
-/** Where the status bars are drawn. */
-export type MarksPosition = 'gutter' | 'text'
+/** How marked lines are drawn. */
+export type MarksPosition = 'gutter' | 'text' | 'background'
+
+const POSITIONS: readonly MarksPosition[] = ['gutter', 'text', 'background']
 
 export function marksPosition(): MarksPosition {
   const v = vscode.workspace.getConfiguration('codeAssurance').get<string>('marks.position')
-  return v === 'text' ? 'text' : 'gutter'
+  return POSITIONS.find((p) => p === v) ?? 'gutter'
 }
 
 const themeColor = (s: Status): vscode.ThemeColor => new vscode.ThemeColor(`codeAssurance.${s}`)
+const backgroundColor = (s: Status): vscode.ThemeColor =>
+  new vscode.ThemeColor(`codeAssurance.${s}Background`)
 
 /**
  * Vertical bars along every confirmed, outdated or ambiguous line.
@@ -22,13 +26,15 @@ const themeColor = (s: Status): vscode.ThemeColor => new vscode.ThemeColor(`code
  *   line numbers. It is drawn over the breakpoint column but leaves the
  *   breakpoint dot visible.
  * - text: a bar at the start of each line, inside the text area.
+ * - background: a faint tint behind the whole line. Its colors are almost
+ *   transparent so the selection, the current line highlight, find matches
+ *   and bracket highlights stay distinguishable on top of it.
  *
  * Decorations never grow into inserted text (OpenOpen), so between an edit
  * and the next recomputation the bars move with the lines they mark.
  */
 export class Marks {
-  private readonly gutter: Record<Status, vscode.TextEditorDecorationType>
-  private readonly text: Record<Status, vscode.TextEditorDecorationType>
+  private readonly styles: Record<MarksPosition, Record<Status, vscode.TextEditorDecorationType>>
   private hidden = false
 
   constructor(extensionUri: vscode.Uri) {
@@ -46,16 +52,22 @@ export class Marks {
           }),
         ]),
       ) as Record<Status, vscode.TextEditorDecorationType>
-    this.gutter = make((s) => ({
-      gutterIconPath: vscode.Uri.joinPath(extensionUri, 'media', `bar-${s}.svg`),
-      gutterIconSize: '100% 100%',
-    }))
-    this.text = make((s) => ({
-      isWholeLine: true,
-      borderColor: themeColor(s),
-      borderStyle: 'solid',
-      borderWidth: '0 0 0 3px',
-    }))
+    this.styles = {
+      gutter: make((s) => ({
+        gutterIconPath: vscode.Uri.joinPath(extensionUri, 'media', `bar-${s}.svg`),
+        gutterIconSize: '100% 100%',
+      })),
+      text: make((s) => ({
+        isWholeLine: true,
+        borderColor: themeColor(s),
+        borderStyle: 'solid',
+        borderWidth: '0 0 0 3px',
+      })),
+      background: make((s) => ({
+        isWholeLine: true,
+        backgroundColor: backgroundColor(s),
+      })),
+    }
   }
 
   setHidden(hidden: boolean): void {
@@ -73,7 +85,7 @@ export class Marks {
     for (const s of STATUSES) {
       const mine = runs.filter((r) => r.status === s)
       // Gutter icons draw on the first line of a range only: one range per line.
-      const gutterRanges =
+      const ranges =
         position === 'gutter'
           ? mine.flatMap((r) => {
               const out: vscode.Range[] = []
@@ -81,17 +93,13 @@ export class Marks {
                 out.push(new vscode.Range(l - 1, 0, l - 1, 0))
               return out
             })
-          : []
-      const textRanges =
-        position === 'text'
-          ? mine.map((r) => new vscode.Range(r.range[0] - 1, 0, r.range[1] - 1, 0))
-          : []
-      editor.setDecorations(this.gutter[s], gutterRanges)
-      editor.setDecorations(this.text[s], textRanges)
+          : mine.map((r) => new vscode.Range(r.range[0] - 1, 0, r.range[1] - 1, 0))
+      for (const p of POSITIONS)
+        editor.setDecorations(this.styles[p][s], p === position ? ranges : [])
     }
   }
 
   dispose(): void {
-    for (const d of [...Object.values(this.gutter), ...Object.values(this.text)]) d.dispose()
+    for (const set of Object.values(this.styles)) for (const d of Object.values(set)) d.dispose()
   }
 }
