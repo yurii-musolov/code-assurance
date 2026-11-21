@@ -172,7 +172,8 @@ describe('without history', () => {
 
 describe('file records', () => {
   it('compare the whole text', () => {
-    const r = rec({ kind: 'file', range: undefined, hash: hashText(BASE) })
+    const r = rec({ kind: 'file', hash: hashText(BASE) })
+    delete r.range
     expect(resolve(r, BASE, null).status).toBe('confirmed')
     expect(resolve(r, BASE + 'x\n', null).status).toBe('outdated')
   })

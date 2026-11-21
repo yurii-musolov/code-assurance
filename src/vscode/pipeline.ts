@@ -54,10 +54,10 @@ export class StatusPipeline {
   private gen = 0
   private readonly timers = new Map<string, ReturnType<typeof setTimeout>>()
 
-  constructor(
-    private readonly ws: Workspace,
-    subscriptions: vscode.Disposable[],
-  ) {
+  private readonly ws: Workspace
+
+  constructor(ws: Workspace, subscriptions: vscode.Disposable[]) {
+    this.ws = ws
     subscriptions.push(
       vscode.workspace.onDidChangeTextDocument((e) => {
         if (e.contentChanges.length > 0) this.schedule(e.document)

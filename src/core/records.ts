@@ -45,9 +45,12 @@ function validDelta(v: unknown): boolean {
   )
 }
 
+/** A parsed JSON object that may or may not have the shape of T. */
+type Untrusted<T> = { [K in keyof T]?: unknown }
+
 export function validLine(obj: unknown): obj is StoreLine {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false
-  const o = obj as Record<string, unknown>
+  const o = obj as Untrusted<AssuranceRecord & Tombstone>
   if (!isStr(o.id) || o.id === '' || !validAuthor(o.author) || !isStr(o.createdAt)) return false
 
   if ('revokes' in o) {
@@ -61,8 +64,9 @@ export function validLine(obj: unknown): obj is StoreLine {
     if (!isInt(s) || !isInt(e) || s < 1 || e < s) return false
   }
   if (o.scope !== undefined && !SCOPES.has(o.scope as string)) return false
-  for (const k of ['symbol', 'container', 'comment', 'movedFrom']) if (!optStr(o[k])) return false
-  for (const k of ['lines', 'before', 'after']) if (!optFingerprints(o[k])) return false
+  for (const k of ['symbol', 'container', 'comment', 'movedFrom'] as const)
+    if (!optStr(o[k])) return false
+  for (const k of ['lines', 'before', 'after'] as const) if (!optFingerprints(o[k])) return false
   if (!validDelta(o.delta)) return false
   if (o.noBaseline !== undefined && o.noBaseline !== true) return false
   if (o.supersedes !== undefined) {

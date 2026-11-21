@@ -68,7 +68,7 @@ export interface HoverEntry {
   status: Status
   createdAt: string
   scope: string
-  comment?: string
+  comment?: string | undefined
   commit: string
   commitLink: string | null
   replaced: number

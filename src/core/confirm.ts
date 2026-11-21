@@ -23,7 +23,7 @@ export interface Resolved {
  */
 export function supersededBy(
   author: Author,
-  target: { kind: RecordKind; symbol?: string; range?: [number, number] },
+  target: { kind: RecordKind; symbol?: string | undefined; range?: [number, number] | undefined },
   current: readonly Resolved[],
 ): Resolved[] {
   return current.filter((e) => {
@@ -42,15 +42,15 @@ export interface NewRecord {
   author: Author
   createdAt: string
   kind: RecordKind
-  scope?: Scope
-  symbol?: string
-  container?: string
-  range?: [number, number]
+  scope?: Scope | undefined
+  symbol?: string | undefined
+  container?: string | undefined
+  range?: [number, number] | undefined
   text: string
   commit: string
   /** Uncommitted changes relative to `commit`; null = could not be described. */
   delta: Delta[] | null
-  comment?: string
+  comment?: string | undefined
   supersedes: string[]
 }
 
@@ -70,8 +70,8 @@ export function buildRecord(p: NewRecord): AssuranceRecord {
     r.range = range
     Object.assign(r, captureRange(splitLines(p.text), range))
     if (p.kind === 'symbol') {
-      r.scope = p.scope
-      r.symbol = p.symbol
+      if (p.scope) r.scope = p.scope
+      if (p.symbol !== undefined) r.symbol = p.symbol
     } else if (p.container) {
       r.container = p.container
     }

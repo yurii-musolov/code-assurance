@@ -34,7 +34,10 @@ export class DocModel {
   private positionsByFp: Map<string, number[]> | undefined
   private wholeHash: string | undefined
 
-  constructor(readonly text: string) {
+  readonly text: string
+
+  constructor(text: string) {
+    this.text = text
     this.lines = splitLines(text)
     this.fps = fingerprints(this.lines)
   }

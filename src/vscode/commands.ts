@@ -142,11 +142,11 @@ function selectedLines(editor: vscode.TextEditor): [number, number] {
 }
 
 interface ConfirmOptions {
-  scope?: Scope
+  scope?: Scope | undefined
   /** Confirm exactly this symbol instead of the one at the cursor. */
-  symbolPath?: string
+  symbolPath?: string | undefined
   /** A record this confirmation explicitly replaces (confirm again / resolve). */
-  supersedeId?: string
+  supersedeId?: string | undefined
 }
 
 async function confirm(c: Ctx, kind: RecordKind, opts: ConfirmOptions = {}): Promise<void> {

@@ -20,7 +20,11 @@ export class RecordStore {
   private byId = new Map<string, { record: AssuranceRecord; sourcePath: string }>()
   corruptLines = 0
 
-  constructor(readonly rootDir: string) {}
+  readonly rootDir: string
+
+  constructor(rootDir: string) {
+    this.rootDir = rootDir
+  }
 
   async load(): Promise<void> {
     const recordsDir = join(this.rootDir, RECORDS_DIR)

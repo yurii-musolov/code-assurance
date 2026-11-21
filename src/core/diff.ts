@@ -187,13 +187,14 @@ export interface MappedRange {
  * an edited range always covers the code that replaced it.
  */
 export class LineMap {
+  readonly aToB: Int32Array
+  readonly newLength: number
   private readonly startOf: Int32Array
   private readonly endOf: Int32Array
 
-  constructor(
-    readonly aToB: Int32Array,
-    readonly newLength: number,
-  ) {
+  constructor(aToB: Int32Array, newLength: number) {
+    this.aToB = aToB
+    this.newLength = newLength
     const n = aToB.length
     this.startOf = new Int32Array(n)
     this.endOf = new Int32Array(n)

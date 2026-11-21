@@ -13,10 +13,12 @@ export class FiltersView implements vscode.WebviewViewProvider {
   private view: vscode.WebviewView | undefined
   private filter: TreeFilter
 
-  constructor(
-    private readonly memento: vscode.Memento,
-    private readonly reviewers: () => { name: string; email: string }[],
-  ) {
+  private readonly memento: vscode.Memento
+  private readonly reviewers: () => { name: string; email: string }[]
+
+  constructor(memento: vscode.Memento, reviewers: () => { name: string; email: string }[]) {
+    this.memento = memento
+    this.reviewers = reviewers
     this.filter = sanitizeFilter(memento.get(STATE_KEY) ?? DEFAULT_FILTER)
   }
 

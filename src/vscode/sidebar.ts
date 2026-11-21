@@ -59,11 +59,12 @@ export class CoverageTree implements vscode.TreeDataProvider<Item> {
   private fireTimer: ReturnType<typeof setTimeout> | undefined
   private reloadTimer: ReturnType<typeof setTimeout> | undefined
 
-  constructor(
-    private readonly ws: Workspace,
-    private readonly pipeline: StatusPipeline,
-    subscriptions: vscode.Disposable[],
-  ) {
+  private readonly ws: Workspace
+  private readonly pipeline: StatusPipeline
+
+  constructor(ws: Workspace, pipeline: StatusPipeline, subscriptions: vscode.Disposable[]) {
+    this.ws = ws
+    this.pipeline = pipeline
     const watcher = vscode.workspace.createFileSystemWatcher('**/*')
     const later = (): void => this.scheduleReload()
     watcher.onDidCreate(later)

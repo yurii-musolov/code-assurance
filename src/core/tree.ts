@@ -111,7 +111,7 @@ export function pruneTree(folder: TreeFolder, keep: (f: TreeFile) => boolean): T
 
 /** Parse stored or webview input; malformed fields fall back to defaults. */
 export function sanitizeFilter(raw: unknown): TreeFilter {
-  const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  const o = raw && typeof raw === 'object' ? (raw as { [K in keyof TreeFilter]?: unknown }) : {}
   return {
     hideUnconfirmed:
       typeof o.hideUnconfirmed === 'boolean' ? o.hideUnconfirmed : DEFAULT_FILTER.hideUnconfirmed,

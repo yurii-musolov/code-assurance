@@ -7,10 +7,10 @@ export class AssuranceCodeLens implements vscode.CodeLensProvider {
   private readonly emitter = new vscode.EventEmitter<void>()
   readonly onDidChangeCodeLenses = this.emitter.event
 
-  constructor(
-    private readonly pipeline: StatusPipeline,
-    subscriptions: vscode.Disposable[],
-  ) {
+  private readonly pipeline: StatusPipeline
+
+  constructor(pipeline: StatusPipeline, subscriptions: vscode.Disposable[]) {
+    this.pipeline = pipeline
     subscriptions.push(
       this.emitter,
       pipeline.onDidUpdate(() => this.emitter.fire()),

@@ -14,7 +14,7 @@ export interface HistoryEntry {
   scope: string
   commit: string
   commitLink: string | null
-  comment?: string
+  comment?: string | undefined
 }
 
 export interface HistoryInput {
