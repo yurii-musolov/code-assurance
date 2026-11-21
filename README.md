@@ -126,7 +126,8 @@ confirmations, and record text is escaped wherever it is shown.
 
 ## Development
 
-Requires Node.js 18+ and [just](https://github.com/casey/just).
+Requires Node.js 26 and npm 11 (`.nvmrc`; `nvm use` picks the version) and
+[just](https://github.com/casey/just).
 
 ```sh
 just install    # dependencies
