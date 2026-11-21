@@ -1,6 +1,7 @@
 **
 !dist/extension.js
-!media/*.png
+!media/icon.png
+!media/activity.svg
 !media/bar-*.svg
 !package.json
 !README.md

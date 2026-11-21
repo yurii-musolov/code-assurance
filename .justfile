@@ -53,7 +53,7 @@ test filter="":
 test-watch:
     npm run test:watch
 
-# Render the PNG icons in media/ from their SVG sources
+# Render the marketplace PNG icon from its SVG source
 icons:
     npm run icons
 
