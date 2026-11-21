@@ -1,0 +1,47 @@
+{
+  "name": "code-assurance",
+  "displayName": "Code Assurance",
+  "description": "Sustained confirmation of code quality and correctness: people confirm the code they checked, take responsibility for it, and re-confirm it when it changes.",
+  "version": "0.1.0",
+  "publisher": "yurii-musolov",
+  "author": {
+    "name": "Yurii Musolov"
+  },
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yurii-musolov/code-assurance"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "build:production": "node esbuild.mjs --production",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "package": "npm run build:production && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^18.19.0",
+    "@types/vscode": "1.85.0",
+    "@vscode/vsce": "^2.24.0",
+    "esbuild": "^0.20.0",
+    "eslint": "^10.7.0",
+    "prettier": "^3.9.5",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.64.0",
+    "vitest": "^1.4.0"
+  }
+}
