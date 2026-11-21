@@ -166,6 +166,13 @@ async function suite() {
     'only the edited type is outdated',
   )
 
+  // The Coverage view and its title commands run without errors.
+  await vscode.commands.executeCommand('codeAssurance.coverage.focus')
+  await vscode.commands.executeCommand('codeAssurance.filter')
+  await vscode.commands.executeCommand('codeAssurance.collapseAll')
+  await vscode.commands.executeCommand('codeAssurance.clearFilters')
+  await sleep(500)
+
   // Every marks position draws without errors.
   const config = vscode.workspace.getConfiguration('codeAssurance')
   for (const position of ['gutter', 'text', 'background']) {

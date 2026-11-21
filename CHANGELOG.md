@@ -17,11 +17,12 @@ All notable changes to this project are documented here. The format follows
 - Positions traced through a line diff from the confirmed text, so marks
   follow code when lines are added or removed around it, including across
   commits and for code confirmed before it was committed.
-- Marks as vertical bars in the gutter or at the start of each line, or as
-  a faint line background (`codeAssurance.marks.position`), with theme
-  colors.
+- Marks as a faint line background (default), or as vertical bars in the
+  gutter or at the start of each line (`codeAssurance.marks.position`),
+  with theme colors.
 - Hover, CodeLens and an actions menu: confirm again, resolve, withdraw,
   diff since confirmation, history, commit on the web.
-- Coverage view with reviewers, confirmations of missing files and filters;
-  `.code-assurance/ignore`.
+- Coverage view with the filters on top of the filtered list, like the
+  Search view: path regex, files with confirmations, reviewer; reviewers,
+  confirmations of missing files; `.code-assurance/ignore`.
 - Append-only, per-person record store that merges without conflicts.

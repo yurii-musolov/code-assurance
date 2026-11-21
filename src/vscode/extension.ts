@@ -3,12 +3,11 @@ import { RECORDS_DIR } from '../core/paths'
 import { AssuranceCodeLens } from './codelens'
 import { registerCommands } from './commands'
 import { BASELINE_SCHEME, BaselineProvider } from './diff'
-import { FiltersView } from './filters'
 import { registerHover } from './hover'
 import { initLog, logError } from './log'
 import { Marks } from './marks'
 import { type FileStatus, StatusPipeline } from './pipeline'
-import { CoverageTree } from './sidebar'
+import { CoverageView } from './sidebar'
 import { Workspace } from './workspace'
 
 const HIDDEN_KEY = 'codeAssurance.marksHidden'
@@ -106,15 +105,15 @@ export async function activate(ext: vscode.ExtensionContext): Promise<Api> {
     }),
   )
 
-  const tree = new CoverageTree(ws, pipeline, subs)
-  const filters = new FiltersView(ext.workspaceState, () => tree.reviewers())
-  tree.setFilter(filters.current)
+  const tree = new CoverageView(ws, pipeline, ext.workspaceState, subs)
   subs.push(
-    filters,
-    vscode.window.registerTreeDataProvider('codeAssurance.coverage', tree),
-    vscode.window.registerWebviewViewProvider(FiltersView.viewId, filters),
-    filters.onDidChange((f) => tree.setFilter(f)),
-    ws.onDidChange(() => filters.refresh()),
+    vscode.window.registerWebviewViewProvider(CoverageView.viewId, tree),
+    vscode.commands.registerCommand('codeAssurance.clearFilters', () => tree.clearFilters()),
+    vscode.commands.registerCommand('codeAssurance.collapseAll', () => tree.collapseAll()),
+    vscode.commands.registerCommand('codeAssurance.filter', async () => {
+      await vscode.commands.executeCommand(`${CoverageView.viewId}.focus`)
+      tree.focusFilter()
+    }),
     vscode.workspace.registerTextDocumentContentProvider(BASELINE_SCHEME, new BaselineProvider()),
     vscode.languages.registerCodeLensProvider(
       { scheme: 'file' },

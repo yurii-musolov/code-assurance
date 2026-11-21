@@ -1,20 +1,34 @@
+import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import * as vscode from 'vscode'
-import { type Coverage, fileCoverage, pct } from '../core/coverage'
+import { type Coverage, fileCoverage } from '../core/coverage'
+import { coverageHtml } from '../core/html'
 import { compileIgnore, type IgnoreRules } from '../core/ignore'
 import { IGNORE_FILE, normalizeEmail, STORE_DIR } from '../core/paths'
 import { splitLines } from '../core/text'
 import {
   buildTree,
   type CoverageValue,
+  compilePathFilter,
   DEFAULT_FILTER,
   fileMatcher,
   pruneTree,
+  sanitizeFilter,
   type TreeFile,
   type TreeFilter,
   type TreeFolder,
 } from '../core/tree'
+import {
+  AUTO_EXPAND_FILES,
+  countFiles,
+  coverageText,
+  folderNodes,
+  isSearch,
+  summaryNode,
+  type ViewNode,
+  type ViewState,
+} from '../core/view'
 import { trackedFiles } from './git'
 import { logError } from './log'
 import { resolveText, type StatusPipeline } from './pipeline'
@@ -23,18 +37,6 @@ import type { Root, Workspace } from './workspace'
 const MAX_FILES = 20_000
 const MAX_FILE_BYTES = 2 * 1024 * 1024
 
-type Item =
-  | { t: 'summary' }
-  | { t: 'root'; root: Root }
-  | { t: 'folder'; root: Root; node: TreeFolder }
-  | { t: 'file'; root: Root; file: TreeFile }
-  | { t: 'reviewers' }
-  | { t: 'reviewer'; email: string }
-  | { t: 'reviewerFile'; root: Root; sourcePath: string; count: number }
-  | { t: 'missing' }
-  | { t: 'missingFile'; root: Root; sourcePath: string }
-  | { t: 'init' }
-
 interface RootData {
   files: string[]
   ignore: IgnoreRules
@@ -42,19 +44,21 @@ interface RootData {
   truncated: boolean
 }
 
-const fmt = (c: CoverageValue): string =>
-  c === 'pending' ? '…' : c === null ? '' : `${pct(c)}% (${c.confirmed}/${c.total})`
+const STATE_KEY = 'codeAssurance.filter'
 
 /**
- * Coverage of every tracked file of repositories that use Code Assurance
- * (have a .code-assurance directory), with reviewers and confirmations of
- * files that no longer exist.
+ * The Coverage view: filters on top and, below them, the coverage of every
+ * tracked file of repositories that use Code Assurance (have a
+ * .code-assurance directory), the reviewers and confirmations of files that
+ * no longer exist. One panel, like the Search view; the filter only narrows
+ * what is listed, percentages always describe every file.
  */
-export class CoverageTree implements vscode.TreeDataProvider<Item> {
-  private readonly emitter = new vscode.EventEmitter<Item | undefined>()
-  readonly onDidChangeTreeData = this.emitter.event
+export class CoverageView implements vscode.WebviewViewProvider {
+  static readonly viewId = 'codeAssurance.coverage'
+  private readonly emitter = new vscode.EventEmitter<void>()
   private readonly data = new Map<string, RootData>()
-  private filter: TreeFilter = DEFAULT_FILTER
+  private filter: TreeFilter
+  private view: vscode.WebviewView | undefined
   private scanGen = 0
   private fireTimer: ReturnType<typeof setTimeout> | undefined
   private reloadTimer: ReturnType<typeof setTimeout> | undefined
@@ -62,9 +66,18 @@ export class CoverageTree implements vscode.TreeDataProvider<Item> {
   private readonly ws: Workspace
   private readonly pipeline: StatusPipeline
 
-  constructor(ws: Workspace, pipeline: StatusPipeline, subscriptions: vscode.Disposable[]) {
+  private readonly memento: vscode.Memento
+
+  constructor(
+    ws: Workspace,
+    pipeline: StatusPipeline,
+    memento: vscode.Memento,
+    subscriptions: vscode.Disposable[],
+  ) {
     this.ws = ws
     this.pipeline = pipeline
+    this.memento = memento
+    this.filter = sanitizeFilter(memento.get(STATE_KEY) ?? DEFAULT_FILTER)
     const watcher = vscode.workspace.createFileSystemWatcher('**/*')
     const later = (): void => this.scheduleReload()
     watcher.onDidCreate(later)
@@ -73,6 +86,7 @@ export class CoverageTree implements vscode.TreeDataProvider<Item> {
       this.emitter,
       watcher,
       ws.onDidChange(() => this.scheduleReload()),
+      this.emitter.event(() => this.post()),
       vscode.workspace.onDidSaveTextDocument((d) => this.recompute(d.uri)),
       pipeline.onDidUpdate((uri) => this.recompute(uri)),
       {
@@ -85,12 +99,71 @@ export class CoverageTree implements vscode.TreeDataProvider<Item> {
     void this.reload()
   }
 
-  setFilter(f: TreeFilter): void {
-    this.filter = f
-    this.emitter.fire(undefined)
+  resolveWebviewView(view: vscode.WebviewView): void {
+    this.view = view
+    view.webview.options = { enableScripts: true, localResourceRoots: [] }
+    view.webview.html = coverageHtml(view.webview.cspSource, randomUUID().replace(/-/g, ''))
+    view.webview.onDidReceiveMessage((msg: unknown) => this.onMessage(msg))
+    view.onDidChangeVisibility(() => this.post())
+    view.onDidDispose(() => {
+      if (this.view === view) this.view = undefined
+    })
   }
 
-  reviewers(): { name: string; email: string }[] {
+  setFilter(f: TreeFilter): void {
+    this.filter = f
+    void this.memento.update(STATE_KEY, f)
+    this.emitter.fire()
+  }
+
+  /** Commands from the view's title bar. */
+  clearFilters(): void {
+    this.setFilter(DEFAULT_FILTER)
+  }
+
+  collapseAll(): void {
+    void this.view?.webview.postMessage({ type: 'collapseAll' })
+  }
+
+  focusFilter(): void {
+    void this.view?.webview.postMessage({ type: 'focusFilter' })
+  }
+
+  private post(): void {
+    if (!this.view?.visible) return
+    void this.view.webview.postMessage({ type: 'state', state: this.state() })
+  }
+
+  private onMessage(msg: unknown): void {
+    if (!msg || typeof msg !== 'object') return
+    const m = msg as { type?: unknown; filter?: unknown; action?: unknown }
+    if (m.type === 'ready') this.post()
+    else if (m.type === 'filter') this.setFilter(sanitizeFilter(m.filter))
+    else if (m.type === 'action')
+      void this.act(m.action).catch((e) => logError('sidebar.action', e))
+  }
+
+  /** Actions come from the page: check them against what this view lists. */
+  private async act(action: unknown): Promise<void> {
+    if (!action || typeof action !== 'object') return
+    const a = action as { type?: unknown; root?: unknown; path?: unknown }
+    if (a.type === 'init') await vscode.commands.executeCommand('codeAssurance.init')
+    else if (a.type === 'reattach') await vscode.commands.executeCommand('codeAssurance.reattach')
+    else if (a.type === 'open' && typeof a.root === 'number' && typeof a.path === 'string') {
+      const root = this.liveRoots()[a.root]
+      if (!root || !this.lists(root, a.path)) return
+      await vscode.commands.executeCommand('vscode.open', this.ws.uriOf(root, a.path))
+    }
+  }
+
+  private lists(root: Root, sourcePath: string): boolean {
+    return (
+      this.data.get(root.rootDir)?.coverage.has(sourcePath) === true ||
+      root.store.currentFor(sourcePath).length > 0
+    )
+  }
+
+  private reviewers(): { name: string; email: string }[] {
     const seen = new Map<string, string>()
     for (const root of this.liveRoots()) {
       for (const r of root.store.reviewers(this.includer(root)))
@@ -120,7 +193,7 @@ export class CoverageTree implements vscode.TreeDataProvider<Item> {
     if (this.fireTimer) return
     this.fireTimer = setTimeout(() => {
       this.fireTimer = undefined
-      this.emitter.fire(undefined)
+      this.emitter.fire()
     }, 200)
   }
 
@@ -151,7 +224,7 @@ export class CoverageTree implements vscode.TreeDataProvider<Item> {
       this.data.set(root.rootDir, { files, ignore, coverage, truncated: all.length > MAX_FILES })
       for (const sourcePath of files) work.push({ root, sourcePath })
     }
-    this.emitter.fire(undefined)
+    this.emitter.fire()
     // Files with confirmations first: they are what people look at.
     work.sort(
       (a, b) =>
@@ -202,7 +275,90 @@ export class CoverageTree implements vscode.TreeDataProvider<Item> {
     return (await resolveText(this.ws, root, sourcePath, text)).coverage
   }
 
-  private treeOf(root: Root): TreeFolder {
+  /** Everything the page shows, already filtered. */
+  private state(): ViewState {
+    const roots = this.liveRoots()
+    const compiled = compilePathFilter(this.filter.pathRegex)
+    const base = {
+      filter: this.filter,
+      reviewers: this.reviewers(),
+      filterError: compiled.ok ? '' : `Invalid regular expression: ${compiled.error}`,
+    }
+    if (roots.length === 0) {
+      const nodes: ViewNode[] =
+        this.ws.roots.length > 0
+          ? [
+              {
+                id: 'init',
+                label: 'Start using Code Assurance in this repository',
+                icon: 'add',
+                action: { type: 'init' },
+              },
+            ]
+          : []
+      const message = this.ws.roots.length > 0 ? '' : 'Open a folder to start confirming code.'
+      return { ...base, active: false, summary: null, nodes, autoExpand: false, message }
+    }
+
+    const trees = roots.map((r) => this.treeOf(r))
+    let confirmed = 0
+    let total = 0
+    for (const t of trees) {
+      if (t.full.coverage && t.full.coverage !== 'pending') {
+        confirmed += t.full.coverage.confirmed
+        total += t.full.coverage.total
+      }
+    }
+    const summary = summaryNode(
+      { confirmed, total },
+      {
+        pending: trees.some((t) => t.full.coverage === 'pending'),
+        files: roots.reduce((n, r) => n + r.store.confirmedFiles().length, 0),
+        truncatedAt: roots.some((r) => this.data.get(r.rootDir)?.truncated) ? MAX_FILES : null,
+        corrupt: roots.reduce((n, r) => n + r.store.corruptLines, 0),
+      },
+    )
+
+    const fileNodes =
+      roots.length === 1
+        ? folderNodes(0, trees[0]!.shown)
+        : roots.map(
+            (root, i): ViewNode => ({
+              id: `${i}:root`,
+              label: path.basename(root.rootDir),
+              description: coverageText(trees[i]!.full.coverage),
+              icon: 'repo',
+              children: folderNodes(i, trees[i]!.shown),
+            }),
+          )
+    const shown = countFiles(fileNodes)
+    const nodes = [...fileNodes]
+    const people = this.reviewerNodes(roots)
+    if (people.length > 0) {
+      nodes.push({ id: 'reviewers', label: 'Reviewers', icon: 'people', children: people })
+    }
+    const missing = this.missingNodes(roots)
+    if (missing.length > 0) {
+      nodes.push({
+        id: 'missing',
+        label: 'Confirmations of missing files',
+        tooltip:
+          'Files renamed or deleted after they were confirmed. Use "Move confirmations of a renamed file".',
+        icon: 'warning',
+        children: missing,
+      })
+    }
+    return {
+      ...base,
+      active: true,
+      summary,
+      nodes,
+      autoExpand: isSearch(this.filter) && shown <= AUTO_EXPAND_FILES,
+      message: shown === 0 && isSearch(this.filter) ? 'No files match the filter.' : '',
+    }
+  }
+
+  private treeOf(root: Root): { full: TreeFolder; shown: TreeFolder } {
     const d = this.data.get(root.rootDir)
     const files: TreeFile[] = (d?.files ?? []).map((p) => ({
       path: p,
@@ -211,156 +367,56 @@ export class CoverageTree implements vscode.TreeDataProvider<Item> {
     const full = buildTree(files)
     const reviewersOf = (p: string): string[] =>
       root.store.currentFor(p).map((r) => normalizeEmail(r.author.email))
-    const pruned = pruneTree(full, fileMatcher(this.filter, reviewersOf))
-    return { ...pruned, coverage: full.coverage }
+    return { full, shown: pruneTree(full, fileMatcher(this.filter, reviewersOf)) }
   }
 
-  getChildren(item?: Item): Item[] {
-    const roots = this.liveRoots()
-    if (!item) {
-      if (roots.length === 0) return this.ws.roots.length > 0 ? [{ t: 'init' }] : []
-      const out: Item[] = [{ t: 'summary' }]
-      if (roots.length === 1) out.push(...this.folderChildren(roots[0]!, this.treeOf(roots[0]!)))
-      else out.push(...roots.map((root): Item => ({ t: 'root', root })))
-      out.push({ t: 'reviewers' })
-      if (this.missing().length > 0) out.push({ t: 'missing' })
-      return out
-    }
-    switch (item.t) {
-      case 'root':
-        return this.folderChildren(item.root, this.treeOf(item.root))
-      case 'folder':
-        return this.folderChildren(item.root, item.node)
-      case 'reviewers':
-        return this.reviewers().map((r): Item => ({ t: 'reviewer', email: r.email }))
-      case 'reviewer':
-        return roots.flatMap((root) =>
-          (
-            root.store.reviewers(this.includer(root)).find((r) => r.email === item.email)?.files ??
-            []
-          ).map(
-            (f): Item => ({
-              t: 'reviewerFile',
-              root,
-              sourcePath: f.sourcePath,
-              count: f.count,
-            }),
-          ),
-        )
-      case 'missing':
-        return this.missing()
-      default:
-        return []
-    }
+  /** Reviewers with the files they confirmed, narrowed by the reviewer and path filters. */
+  private reviewerNodes(roots: Root[]): ViewNode[] {
+    const compiled = compilePathFilter(this.filter.pathRegex)
+    const pathOk = compiled.ok ? compiled.test : (): boolean => true
+    const byEmail = new Map<string, { name: string; count: number; files: ViewNode[] }>()
+    roots.forEach((root, i) => {
+      for (const r of root.store.reviewers(this.includer(root))) {
+        if (this.filter.reviewer !== null && r.email !== this.filter.reviewer) continue
+        const entry = byEmail.get(r.email) ?? { name: r.name, count: 0, files: [] }
+        entry.count += r.count
+        for (const f of r.files) {
+          if (!pathOk(f.sourcePath)) continue
+          entry.files.push({
+            id: `${i}:r:${r.email}:${f.sourcePath}`,
+            label: f.sourcePath,
+            description: String(f.count),
+            icon: 'file',
+            action: { type: 'open', root: i, path: f.sourcePath },
+          })
+        }
+        byEmail.set(r.email, entry)
+      }
+    })
+    return [...byEmail]
+      .filter(([, r]) => r.files.length > 0)
+      .map(([email, r]) => ({
+        id: `reviewer:${email}`,
+        label: r.name,
+        description: `${r.count} confirmation(s)`,
+        tooltip: email,
+        icon: 'person',
+        children: r.files,
+      }))
   }
 
-  private missing(): Item[] {
-    return this.liveRoots().flatMap((root) =>
+  private missingNodes(roots: Root[]): ViewNode[] {
+    return roots.flatMap((root, i) =>
       root.store
         .orphans((p) => fs.existsSync(this.ws.uriOf(root, p).fsPath), this.includer(root))
-        .map((sourcePath): Item => ({ t: 'missingFile', root, sourcePath })),
+        .map(
+          (sourcePath): ViewNode => ({
+            id: `${i}:m:${sourcePath}`,
+            label: sourcePath,
+            icon: 'file',
+            action: { type: 'reattach' },
+          }),
+        ),
     )
-  }
-
-  private folderChildren(root: Root, node: TreeFolder): Item[] {
-    return [
-      ...node.folders.map((f): Item => ({ t: 'folder', root, node: f })),
-      ...node.files.map((file): Item => ({ t: 'file', root, file })),
-    ]
-  }
-
-  getTreeItem(item: Item): vscode.TreeItem {
-    const None = vscode.TreeItemCollapsibleState.None
-    const Collapsed = vscode.TreeItemCollapsibleState.Collapsed
-    switch (item.t) {
-      case 'init': {
-        const ti = new vscode.TreeItem('Start using Code Assurance in this repository', None)
-        ti.iconPath = new vscode.ThemeIcon('add')
-        ti.command = { title: 'Initialize', command: 'codeAssurance.init' }
-        return ti
-      }
-      case 'summary': {
-        const roots = this.liveRoots()
-        const trees = roots.map((r) => this.treeOf(r).coverage)
-        const pending = trees.includes('pending')
-        let confirmed = 0
-        let total = 0
-        for (const c of trees) {
-          if (c && c !== 'pending') {
-            confirmed += c.confirmed
-            total += c.total
-          }
-        }
-        const files = roots.reduce((n, r) => n + r.store.confirmedFiles().length, 0)
-        const label =
-          total === 0 ? 'No code lines' : `${pct({ confirmed, total })}% of code lines confirmed`
-        const ti = new vscode.TreeItem(pending ? `${label} (counting…)` : label, None)
-        const truncated = roots.some((r) => this.data.get(r.rootDir)?.truncated)
-        const corrupt = roots.reduce((n, r) => n + r.store.corruptLines, 0)
-        ti.description = `${files} file(s) with confirmations`
-        ti.tooltip =
-          `${confirmed} of ${total} code lines confirmed.` +
-          (truncated ? `\nOnly the first ${MAX_FILES} files are counted.` : '') +
-          (corrupt > 0 ? `\n${corrupt} unreadable record line(s).` : '')
-        ti.iconPath = new vscode.ThemeIcon(corrupt > 0 ? 'warning' : 'shield')
-        return ti
-      }
-      case 'root': {
-        const ti = new vscode.TreeItem(path.basename(item.root.rootDir), Collapsed)
-        ti.description = fmt(this.treeOf(item.root).coverage)
-        ti.iconPath = new vscode.ThemeIcon('repo')
-        return ti
-      }
-      case 'folder': {
-        const ti = new vscode.TreeItem(item.node.name, Collapsed)
-        ti.description = fmt(item.node.coverage)
-        ti.iconPath = vscode.ThemeIcon.Folder
-        ti.resourceUri = this.ws.uriOf(item.root, item.node.path)
-        return ti
-      }
-      case 'file': {
-        const uri = this.ws.uriOf(item.root, item.file.path)
-        const ti = new vscode.TreeItem(uri, None)
-        ti.description = fmt(item.file.coverage)
-        ti.command = { title: 'Open', command: 'vscode.open', arguments: [uri] }
-        return ti
-      }
-      case 'reviewers': {
-        const ti = new vscode.TreeItem('Reviewers', Collapsed)
-        ti.iconPath = new vscode.ThemeIcon('organization')
-        return ti
-      }
-      case 'reviewer': {
-        const roots = this.liveRoots()
-        const summaries = roots.flatMap((r) =>
-          r.store.reviewers(this.includer(r)).filter((x) => x.email === item.email),
-        )
-        const ti = new vscode.TreeItem(summaries[0]?.name ?? item.email, Collapsed)
-        ti.description = `${summaries.reduce((n, s) => n + s.count, 0)} confirmation(s)`
-        ti.tooltip = item.email
-        ti.iconPath = new vscode.ThemeIcon('person')
-        return ti
-      }
-      case 'reviewerFile': {
-        const uri = this.ws.uriOf(item.root, item.sourcePath)
-        const ti = new vscode.TreeItem(uri, None)
-        ti.description = `${item.count}`
-        ti.command = { title: 'Open', command: 'vscode.open', arguments: [uri] }
-        return ti
-      }
-      case 'missing': {
-        const ti = new vscode.TreeItem('Confirmations of missing files', Collapsed)
-        ti.iconPath = new vscode.ThemeIcon('warning')
-        ti.tooltip =
-          'Files renamed or deleted after they were confirmed. Use "Move confirmations of a renamed file".'
-        return ti
-      }
-      case 'missingFile': {
-        const ti = new vscode.TreeItem(item.sourcePath, None)
-        ti.command = { title: 'Move', command: 'codeAssurance.reattach' }
-        ti.iconPath = new vscode.ThemeIcon('file')
-        return ti
-      }
-    }
   }
 }

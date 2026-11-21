@@ -83,12 +83,23 @@ were outdated. Partly overlapping confirmations stand side by side.
 
 ## Side bar
 
-The **Code Assurance** view shows the share of code lines confirmed for
-every tracked file, rolled up through folders, the reviewers and their
-files, and confirmations of files that no longer exist. Blank lines are not
-counted. **Filters** narrow the tree by "has confirmations", reviewer and a
-path regex without changing any percentage. The eye button in the view
-title hides the marks in editors while you write code.
+The **Coverage** view works like the Search view: the filters are on top
+and the files they let through are listed right below them.
+
+- **Filter by path**: a regular expression matched against the
+  repository-relative path. While a path or reviewer filter is set, folders
+  open by themselves (up to 300 files).
+- The toggle inside the input keeps only **files with confirmations**.
+- **Reviewer** narrows the files and the reviewers list to one person.
+
+Below the filters: the share of code lines confirmed, every tracked file
+with its coverage rolled up through folders, the reviewers with the files
+they confirmed, and confirmations of files that no longer exist. Filters
+never change a percentage. Blank lines are not counted. The view title has
+buttons to hide the marks in editors while you write code, refresh, clear
+the filters and collapse all folders; **Code Assurance: Filter coverage**
+moves the focus to the filter. The tree works with the keyboard: arrows,
+Home/End, Enter.
 
 Files can be left out of coverage with `.code-assurance/ignore`
 (gitignore syntax: `*`, `**`, `?`, trailing `/`, leading `!`).

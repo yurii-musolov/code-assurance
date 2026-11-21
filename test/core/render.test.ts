@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filtersHtml, historyHtml } from '../../src/core/html'
+import { coverageHtml, historyHtml } from '../../src/core/html'
 import {
   codeLensTitle,
   commitUrl,
@@ -135,6 +135,6 @@ describe('webview markup', () => {
   })
 
   it('filters markup carries no data', () => {
-    expect(filtersHtml('csp', 'n')).toContain("script-src 'nonce-n'")
+    expect(coverageHtml('csp', 'n')).toContain("script-src 'nonce-n'")
   })
 })
