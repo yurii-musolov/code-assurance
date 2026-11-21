@@ -1,9 +1,12 @@
 import * as vscode from 'vscode'
-import { classify, supportsSymbols, type SymbolNode } from '../core/scopes'
+import { classify, nestSymbols, supportsSymbols, type SymbolNode } from '../core/scopes'
 
 const DECLARATION_CHARS = 400
 
-function toNode(s: vscode.DocumentSymbol, doc: vscode.TextDocument): SymbolNode {
+function toNode(
+  s: Pick<vscode.DocumentSymbol, 'name' | 'kind' | 'range' | 'children'>,
+  doc: vscode.TextDocument,
+): SymbolNode {
   const declaration = doc.getText(s.range).slice(0, DECLARATION_CHARS)
   return {
     name: s.name,
@@ -15,16 +18,26 @@ function toNode(s: vscode.DocumentSymbol, doc: vscode.TextDocument): SymbolNode 
 
 /**
  * Symbol tree of a document in a supported language, or null when there is
- * none to trust: another language, no provider, a provider still warming up
- * (empty answer) or one that answers only with a flat list.
+ * none to trust: another language, no provider, or a provider still warming
+ * up (empty answer). Providers that answer with a flat list (the Go
+ * extension does) get their symbols nested by range.
  */
 export async function documentSymbols(doc: vscode.TextDocument): Promise<SymbolNode[] | null> {
   if (!supportsSymbols(doc.languageId)) return null
   const result = await vscode.commands.executeCommand<
     (vscode.DocumentSymbol | vscode.SymbolInformation)[] | undefined
   >('vscode.executeDocumentSymbolProvider', doc.uri)
-  if (!result || result.length === 0 || !('children' in result[0]!)) return null
-  return (result as vscode.DocumentSymbol[]).map((s) => toNode(s, doc))
+  if (!result || result.length === 0) return null
+  if ('children' in result[0]!) {
+    return (result as vscode.DocumentSymbol[]).map((s) => toNode(s, doc))
+  }
+  return nestSymbols(
+    (result as vscode.SymbolInformation[])
+      .filter((s) => s.location.uri.toString() === doc.uri.toString())
+      .map((s) =>
+        toNode({ name: s.name, kind: s.kind, range: s.location.range, children: [] }, doc),
+      ),
+  )
 }
 
 /**

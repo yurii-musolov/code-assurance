@@ -4,6 +4,7 @@ import {
   enclosingSymbol,
   isFunctionValued,
   Kind,
+  nestSymbols,
   rustItem,
   supportsSymbols,
   symbolsAtPath,
@@ -92,5 +93,35 @@ describe('symbol lookup', () => {
     expect(symbolsAtPath(tree, 'A/m')).toHaveLength(2)
     expect(symbolsAtPath(tree, 'f')).toHaveLength(1)
     expect(symbolsAtPath(tree, 'A/x')).toEqual([])
+  })
+})
+
+describe('nestSymbols', () => {
+  const flat = (name: string, range: [number, number]) => ({
+    name,
+    scope: 'function' as const,
+    range,
+  })
+  const shape = (nodes: SymbolNode[]): unknown[] =>
+    nodes.map((n) => (n.children.length ? [n.name, shape(n.children)] : n.name))
+
+  it('nests by range containment regardless of list order', () => {
+    const tree = nestSymbols([
+      flat('get', [9, 11]),
+      flat('Box', [7, 12]),
+      flat('add', [3, 5]),
+      flat('field', [8, 8]),
+      flat('main', [14, 14]),
+    ])
+    expect(shape(tree)).toEqual(['add', ['Box', ['field', 'get']], 'main'])
+  })
+
+  it('keeps siblings that only touch apart', () => {
+    expect(shape(nestSymbols([flat('a', [1, 3]), flat('b', [3, 5])]))).toEqual(['a', 'b'])
+  })
+
+  it('finds the enclosing symbol in a nested flat list', () => {
+    const tree = nestSymbols([flat('Box', [7, 12]), flat('get', [9, 11])])
+    expect(enclosingSymbol(tree, [10, 10])?.path).toBe('Box/get')
   })
 })

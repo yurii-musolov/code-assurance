@@ -131,6 +131,31 @@ export function rustItem(declaration: string): Scope | null {
   return 'type'
 }
 
+/**
+ * Build a symbol tree from a flat list (what some providers return, e.g. the
+ * Go extension): every symbol becomes a child of the smallest symbol listed
+ * before it whose range encloses its own. Symbols with the same range nest
+ * in list order.
+ */
+export function nestSymbols(flat: readonly Omit<SymbolNode, 'children'>[]): SymbolNode[] {
+  const sorted = flat
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => a.s.range[0] - b.s.range[0] || b.s.range[1] - a.s.range[1] || a.i - b.i)
+  const roots: SymbolNode[] = []
+  const open: SymbolNode[] = []
+  for (const { s } of sorted) {
+    const node: SymbolNode = { name: s.name, scope: s.scope, range: s.range, children: [] }
+    for (;;) {
+      const top = open.at(-1)
+      if (!top || (top.range[0] <= s.range[0] && s.range[1] <= top.range[1])) break
+      open.pop()
+    }
+    ;(open.at(-1)?.children ?? roots).push(node)
+    open.push(node)
+  }
+  return roots
+}
+
 /** Innermost symbol satisfying `pred` that encloses the whole range. */
 export function enclosingSymbol(
   roots: readonly SymbolNode[],
