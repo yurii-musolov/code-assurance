@@ -190,9 +190,12 @@ just release patch       # or minor / major: commit "release: X.Y.Z" and tag vX.
 git push --follow-tags   # the tag starts the Release workflow
 ```
 
-Publishing needs the repository secret `VSCE_PAT`: an Azure DevOps personal
-access token with the **Marketplace → Manage** scope and **All accessible
-organizations**, created by the owner of the `yurii-musolov` publisher.
+Publishing uses Marketplace **Trusted Publishing** (OIDC), so no access
+token is stored. The `yurii-musolov` publisher needs a Trusted Publishing
+policy (marketplace.visualstudio.com/manage → publisher → Trusted
+Publishing → Create) with the repository owner and name, the workflow
+`release.yml` and the environment `marketplace`. For a private repository
+the workflow has to run within 48 hours of creating the policy.
 Dependabot proposes weekly updates of npm packages and actions; the VS Code
 and Node.js type packages are raised by hand together with
 `engines.vscode`.

@@ -4,8 +4,10 @@ name: Release
 # vX.Y.Z). Publishes the extension to the Visual Studio Marketplace and
 # attaches the .vsix to a GitHub release.
 #
-# Needs the repository secret VSCE_PAT: an Azure DevOps personal access
-# token with the Marketplace (Manage) scope for all accessible organizations.
+# Publishing uses Marketplace Trusted Publishing: GitHub's OIDC token is
+# exchanged for a short-lived Marketplace credential, so no access token is
+# stored anywhere. The publisher's Trusted Publishing policy must name this
+# repository, the workflow file release.yml and the environment "marketplace".
 
 on:
   push:
@@ -22,8 +24,10 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: marketplace
     permissions:
       contents: write # create the GitHub release
+      id-token: write # OIDC token for Marketplace Trusted Publishing
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,9 +52,7 @@ jobs:
       - run: npm audit
       - run: npm run package
       - name: Publish to the Marketplace
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx vsce publish --packagePath "code-assurance-$VERSION.vsix"
+        run: npx vsce publish --oidc --packagePath "code-assurance-$VERSION.vsix"
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
