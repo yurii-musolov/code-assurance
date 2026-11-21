@@ -17,6 +17,10 @@ install:
 deps:
     npm install
 
+# Check dependencies for known vulnerabilities
+audit:
+    npm audit
+
 # Bundle the extension into dist/ (with source maps)
 build:
     npm run build
