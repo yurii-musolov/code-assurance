@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Format, lint, types, unit tests, package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run package
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vsix
+          path: "*.vsix"
+          if-no-files-found: error
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - run: npm audit
+
+  integration:
+    name: Integration test in VS Code
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Every language must be tested here: a missing extension fails the job.
+      REQUIRE_LANGUAGES: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: stable
+          cache: false
+      - run: npm ci
+      - name: Language servers (gopls; cargo comes with the runner)
+        run: |
+          go install golang.org/x/tools/gopls@latest
+          cargo --version
+      - name: Allow the Electron sandbox
+        # Ubuntu 24.04 restricts unprivileged user namespaces, which the
+        # Chromium sandbox of VS Code needs.
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Download VS Code
+        run: |
+          curl -fsSL https://update.code.visualstudio.com/latest/linux-x64/stable \
+            | tar -xz -C "$RUNNER_TEMP"
+          echo "VSCODE_BIN=$RUNNER_TEMP/VSCode-linux-x64/bin/code" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/VSCode-linux-x64/bin/code" --version
+      - name: Install language extensions
+        run: |
+          dir="$RUNNER_TEMP/extensions"
+          for id in ms-python.python ms-python.vscode-pylance ms-python.vscode-python-envs \
+                    golang.go rust-lang.rust-analyzer; do
+            "$VSCODE_BIN" --extensions-dir "$dir" --install-extension "$id"
+          done
+          echo "VSCODE_EXTENSIONS=$dir" >> "$GITHUB_ENV"
+      - run: xvfb-run -a npm run test:int

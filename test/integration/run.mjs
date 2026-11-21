@@ -6,7 +6,8 @@
 // taken from the local VS Code installation (VSCODE_EXTENSIONS, by default
 // ~/.vscode/extensions) and linked into the test profile without the rest of
 // the local extensions. A language whose extensions are not installed is
-// skipped, and the summary says so. Go also needs gopls, Rust needs cargo.
+// skipped, and the summary says so; with REQUIRE_LANGUAGES=1 (CI) a skipped
+// language fails the run. Go also needs gopls, Rust needs cargo.
 import { execFileSync, spawnSync } from 'node:child_process'
 import {
   existsSync,
@@ -142,7 +143,13 @@ try {
   } else {
     console.log(`integration test passed: typescript${languages.map((l) => `, ${l}`).join('')}`)
   }
-  if (skipped.length > 0) console.log(`skipped: ${skipped.join('; ')}`)
+  if (skipped.length > 0) {
+    console.log(`skipped: ${skipped.join('; ')}`)
+    if (process.env.REQUIRE_LANGUAGES === '1') {
+      console.error('REQUIRE_LANGUAGES=1: every language must be tested')
+      process.exitCode = 1
+    }
+  }
 } finally {
   rmSync(work, { recursive: true, force: true })
 }
