@@ -10,7 +10,7 @@ const ctx = await esbuild.context({
   external: ['vscode'],
   format: 'cjs',
   platform: 'node',
-  target: 'node22',
+  target: 'node24',
   sourcemap: !production,
   minify: production,
   logLevel: 'info',
