@@ -3,14 +3,39 @@ import { classify, nestSymbols, type SymbolNode, supportsSymbols } from '../core
 
 const DECLARATION_CHARS = 400
 
+/**
+ * The scope of a symbol, read from its declaration. A symbol's range starts
+ * with its doc comments and attributes, which can be longer than the text
+ * that is looked at, so the line with the name (where the keyword is) comes
+ * first and the start of the range is the fallback.
+ */
+function scopeOf(
+  s: Pick<vscode.DocumentSymbol, 'kind' | 'range'> & { selectionRange?: vscode.Range },
+  doc: vscode.TextDocument,
+): SymbolNode['scope'] {
+  const read = (from: vscode.Position): string =>
+    doc.getText(new vscode.Range(from, s.range.end)).slice(0, DECLARATION_CHARS)
+  const nameLine = s.selectionRange?.start.line
+  if (
+    nameLine !== undefined &&
+    nameLine > s.range.start.line &&
+    s.range.contains(s.selectionRange!)
+  ) {
+    const scope = classify(s.kind, doc.languageId, read(new vscode.Position(nameLine, 0)))
+    if (scope) return scope
+  }
+  return classify(s.kind, doc.languageId, read(s.range.start))
+}
+
 function toNode(
-  s: Pick<vscode.DocumentSymbol, 'name' | 'kind' | 'range' | 'children'>,
+  s: Pick<vscode.DocumentSymbol, 'name' | 'kind' | 'range' | 'children'> & {
+    selectionRange?: vscode.Range
+  },
   doc: vscode.TextDocument,
 ): SymbolNode {
-  const declaration = doc.getText(s.range).slice(0, DECLARATION_CHARS)
   return {
     name: s.name,
-    scope: classify(s.kind, doc.languageId, declaration),
+    scope: scopeOf(s, doc),
     range: [s.range.start.line + 1, s.range.end.line + 1],
     children: s.children.map((c) => toNode(c, doc)),
   }

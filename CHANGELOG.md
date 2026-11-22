@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Rust: "Confirm enclosing type" finds type aliases (`pub type Id = u32;`),
+  also when a long doc comment precedes them or another item.
+
 ## [0.2.0] - 2026-11-22
 
 ### Added

@@ -46,6 +46,17 @@ describe('classify', () => {
     expect(classify(Kind.Module, 'rust', 'pub(crate) mod inner {')).toBe('module')
     expect(classify(Kind.Interface, 'rust', 'pub trait T {')).toBe('type')
     expect(classify(Kind.Function, 'rust', 'macro_rules! m {')).toBe('function')
+    expect(classify(Kind.TypeParameter, 'rust', 'pub type NodeId = u32;')).toBe('type')
+  })
+
+  it('falls back to the kinds rust-analyzer uses when the keyword is not in view', () => {
+    // A doc comment longer than the text that is read hides the keyword.
+    const docs = '/// A long explanation of the alias.\n'.repeat(20)
+    expect(classify(Kind.TypeParameter, 'rust', docs)).toBe('type')
+    expect(classify(Kind.Object, 'rust', docs)).toBe('impl')
+    expect(classify(Kind.Struct, 'rust', docs)).toBe('type')
+    // Elsewhere a type parameter is not a scope.
+    expect(classify(Kind.TypeParameter, 'typescript', 'T')).toBeNull()
   })
 })
 

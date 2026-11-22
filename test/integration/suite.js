@@ -63,6 +63,8 @@ const LANGUAGE_CASES = {
       { line: 6, command: 'confirmType', scope: 'type', range: [5, 7] },
       { line: 11, command: 'confirmImpl', scope: 'impl', range: [9, 13] },
       { line: 17, command: 'confirmModule', scope: 'module', range: [15, 19] },
+      { line: 22, command: 'confirmType', scope: 'type', range: [21, 22] },
+      { line: 32, command: 'confirmType', scope: 'type', range: [24, 32] },
     ],
   },
 }
