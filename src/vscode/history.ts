@@ -37,7 +37,7 @@ export async function openHistory(
     panel = vscode.window.createWebviewPanel(
       'codeAssurance.history',
       `History: ${sourcePath.split('/').pop()}`,
-      vscode.ViewColumn.Beside,
+      vscode.ViewColumn.Active,
       { enableScripts: true, localResourceRoots: [] },
     )
     panels.set(key, panel)
