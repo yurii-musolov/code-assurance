@@ -52,7 +52,13 @@ const FIXTURES = {
     'pub fn add(a: i32, b: i32) -> i32 {\n    a + b\n}\n\n' +
     'pub struct Boxed {\n    value: i32,\n}\n\n' +
     'impl Boxed {\n    pub fn get(&self) -> i32 {\n        self.value\n    }\n}\n\n' +
-    'mod inner {\n    pub fn one() -> i32 {\n        1\n    }\n}\n',
+    'mod inner {\n    pub fn one() -> i32 {\n        1\n    }\n}\n\n' +
+    '/// Identifier of a node.\npub type NodeId = u32;\n\n' +
+    // A doc comment longer than the declaration prefix the scope is read from.
+    '/// Weight of an edge.\n///\n'.concat(
+      '/// The weight is the cost of moving along the edge in either direction.\n'.repeat(6),
+    ) +
+    'pub type Weight = f64;\n',
 }
 
 /** Link the installed extensions of every language that has them all. */

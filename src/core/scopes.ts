@@ -32,6 +32,7 @@ export const Kind = {
   Constant: 13,
   Object: 18,
   Struct: 22,
+  TypeParameter: 26,
 } as const
 
 export interface SymbolNode {
@@ -53,6 +54,10 @@ export function classify(kind: number, languageId: string, declaration: string):
   if (languageId === 'rust') {
     const item = rustItem(declaration)
     if (item) return item
+    // rust-analyzer reports type aliases as type parameters and impl blocks
+    // as objects; neither kind means anything else in its outline.
+    if (kind === Kind.TypeParameter) return 'type'
+    if (kind === Kind.Object) return 'impl'
   }
   switch (kind) {
     case Kind.Function:
