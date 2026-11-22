@@ -80,9 +80,33 @@ install-ext: package
 uninstall-ext:
     code --uninstall-extension yurii-musolov.code-assurance
 
-# Bump the version (patch | minor | major), commit and tag it; push the tag to publish
-release level="patch": check
-    npm version {{level}} -m "release: %s"
+# Prepare a release (patch | minor | major): branch, version, changelog, pull request
+release level="patch":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! git diff --quiet || ! git diff --cached --quiet; then echo "commit or stash your changes first"; exit 1; fi
+    git switch -q main && git pull -q --ff-only
+    just check
+    version="$(npm version {{level}} --no-git-tag-version)"
+    version="${version#v}"
+    node scripts/changelog.mjs "$version"
+    git switch -q -c "release/v$version"
+    git commit -qam "release: $version"
+    git push -q -u origin "release/v$version"
+    gh pr create --base main --title "Release $version" \
+      --body "Version $version with the changes listed under [$version] in CHANGELOG.md. After merging, run \`just publish\`."
+
+# After the release pull request is merged: tag it on main, which publishes it
+publish:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    git switch -q main && git pull -q --ff-only
+    version="$(node -p "require('./package.json').version")"
+    if [ "$(git log -1 --format=%s)" != "release: $version" ]; then
+      echo "main does not end with the commit \"release: $version\""; exit 1
+    fi
+    git tag -a "v$version" -m "Code Assurance $version"
+    git push origin "v$version"
 
 # Remove build output
 clean:
