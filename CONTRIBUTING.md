@@ -46,12 +46,15 @@ GitHub Actions (`.github/workflows`):
   the checks again, publishes to the Visual Studio Marketplace and attaches
   the `.vsix` to a GitHub release.
 
-To release: move the `[Unreleased]` notes in `CHANGELOG.md` under the new
-version, then
+`main` accepts changes only through pull requests, so a release takes two
+steps. Keep the notes for the next version under `[Unreleased]` in
+`CHANGELOG.md` as you go, then:
 
 ```sh
-just release patch       # or minor / major: commit "release: X.Y.Z" and tag vX.Y.Z
-git push --follow-tags   # the tag starts the Release workflow
+just release minor   # or patch / major: branch release/vX.Y.Z with the new
+                     # version and changelog section, pushed with a pull request
+# merge the pull request on GitHub, then
+just publish         # tags vX.Y.Z on main; the tag starts the Release workflow
 ```
 
 Publishing uses Marketplace **Trusted Publishing** (OIDC), so no access

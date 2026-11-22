@@ -17,7 +17,7 @@ All notable changes to this project are documented here. The format follows
   instead of splitting the editor area.
 - Development and release notes moved from the README to CONTRIBUTING.md.
 
-## [0.1.0]
+## [0.1.0] - 2026-11-21
 
 ### Added
 
