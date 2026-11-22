@@ -55,10 +55,19 @@ describe('filters', () => {
 
   it('sanitizes untrusted input', () => {
     expect(sanitizeFilter(null)).toEqual(DEFAULT_FILTER)
-    expect(sanitizeFilter({ hideUnconfirmed: 'x', reviewer: ' Ann@X.com', pathRegex: 5 })).toEqual({
+    expect(
+      sanitizeFilter({
+        hideUnconfirmed: 'x',
+        reviewer: ' Ann@X.com',
+        pathRegex: 5,
+        groupByReviewer: 1,
+      }),
+    ).toEqual({
       hideUnconfirmed: true,
       reviewer: 'ann@x.com',
       pathRegex: '',
+      groupByReviewer: false,
     })
+    expect(sanitizeFilter({ groupByReviewer: true }).groupByReviewer).toBe(true)
   })
 })

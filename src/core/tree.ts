@@ -61,9 +61,19 @@ export interface TreeFilter {
   reviewer: string | null
   /** Regular expression matched against the repository-relative path; '' = off. */
   pathRegex: string
+  /** One tree per reviewer instead of one for everyone (when no reviewer is chosen). */
+  groupByReviewer: boolean
 }
 
-export const DEFAULT_FILTER: TreeFilter = { hideUnconfirmed: true, reviewer: null, pathRegex: '' }
+/** The fields that decide whether a file is listed. */
+export type FileFilter = Pick<TreeFilter, 'hideUnconfirmed' | 'reviewer' | 'pathRegex'>
+
+export const DEFAULT_FILTER: TreeFilter = {
+  hideUnconfirmed: true,
+  reviewer: null,
+  pathRegex: '',
+  groupByReviewer: false,
+}
 export const MAX_PATH_REGEX = 500
 
 export type PathMatcher = { ok: true; test: (p: string) => boolean } | { ok: false; error: string }
@@ -88,7 +98,7 @@ export function compilePathFilter(src: string): PathMatcher {
  * regex filters nothing.
  */
 export function fileMatcher(
-  f: TreeFilter,
+  f: FileFilter,
   reviewersOf: (path: string) => string[],
 ): (file: TreeFile) => boolean {
   const compiled = compilePathFilter(f.pathRegex)
@@ -120,5 +130,6 @@ export function sanitizeFilter(raw: unknown): TreeFilter {
         ? normalizeEmail(o.reviewer)
         : null,
     pathRegex: typeof o.pathRegex === 'string' ? o.pathRegex.slice(0, 10 * MAX_PATH_REGEX) : '',
+    groupByReviewer: o.groupByReviewer === true,
   }
 }

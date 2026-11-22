@@ -88,8 +88,6 @@ const ICONS: Record<string, string> = {
   repo: '<path d="M4 2.5h8.5v11H4.5a1.5 1.5 0 0 1-1.5-1.5V4A1.5 1.5 0 0 1 4.5 2.5z"/><path d="M3 11.5A1.5 1.5 0 0 1 4.5 10h8"/>',
   folder: '<path d="M1.5 3.5h5l1.5 1.5h6.5v8h-13z"/>',
   file: '<path d="M3.5 1.5h6l3 3v10h-9z"/><path d="M9.5 1.5v3h3"/>',
-  people:
-    '<circle cx="5.5" cy="5.5" r="2"/><path d="M1.5 13c0-2.5 1.8-4 4-4s4 1.5 4 4"/><circle cx="11" cy="5" r="1.7"/><path d="M11 8.5c2 0 3.5 1.3 3.5 3.5"/>',
   person: '<circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-3 2.2-5 5-5s5 2 5 5"/>',
   warning: '<path d="M8 1.8 15 14H1z"/><path d="M8 6v4M8 11.8v.4"/>',
   shield:
@@ -162,7 +160,7 @@ export function coverageHtml(cspSource: string, nonce: string): string {
     <button class="toggle" id="hide" title="Only files with confirmations" aria-pressed="false">${iconSvg('filter')}</button>
   </div>
   <div id="error"></div>
-  <select id="reviewer" aria-label="Reviewer"></select>
+  <select id="reviewer" aria-label="Files of"></select>
 </header>
 <div id="tree" role="tree" tabindex="0" aria-label="Coverage"></div>
 <div id="message"></div>
@@ -185,11 +183,15 @@ export function coverageHtml(cspSource: string, nonce: string): string {
     span.innerHTML = name ? ICONS[name] : ''
     return span
   }
+  // Value of the "a tree per reviewer" entry; emails never start with ':'.
+  const GROUP = ':group'
   const isOpen = (n) =>
-    open.has(n.id) ? open.get(n.id) : !!(state && state.autoExpand && n.icon !== 'people')
+    open.has(n.id) ? open.get(n.id) : n.open !== undefined ? n.open : !!(state && state.autoExpand)
   const send = () => vscode.postMessage({ type: 'filter', filter: {
     hideUnconfirmed: hide.getAttribute('aria-pressed') === 'true',
-    reviewer: reviewer.value, pathRegex: path.value } })
+    reviewer: reviewer.value === GROUP ? '' : reviewer.value,
+    groupByReviewer: reviewer.value === GROUP,
+    pathRegex: path.value } })
 
   function row(n, depth, parent) {
     const el = document.createElement('div')
@@ -281,10 +283,11 @@ export function coverageHtml(cspSource: string, nonce: string): string {
     send()
   })
   reviewer.addEventListener('change', send)
-  const option = (value, text) => {
+  const option = (value, text, disabled) => {
     const o = document.createElement('option')
     o.value = value
     o.textContent = text
+    o.disabled = !!disabled
     reviewer.appendChild(o)
   }
 
@@ -305,11 +308,13 @@ export function coverageHtml(cspSource: string, nonce: string): string {
     filters.hidden = !state.active
     hide.setAttribute('aria-pressed', String(!!state.filter.hideUnconfirmed))
     reviewer.replaceChildren()
-    option('', 'All reviewers')
+    option('', 'All reviewers in one tree')
+    option(GROUP, 'A tree per reviewer')
+    if (state.reviewers.length) option(':sep', '──────────', true)
     for (const r of state.reviewers) option(r.email, r.name + ' <' + r.email + '>')
     const want = state.filter.reviewer || ''
     if (want && !state.reviewers.some((r) => r.email === want)) option(want, want + ' (no current confirmations)')
-    reviewer.value = want
+    reviewer.value = want || (state.filter.groupByReviewer ? GROUP : '')
     if (document.activeElement !== path) path.value = state.filter.pathRegex
     error.textContent = state.filterError
     pathBox.classList.toggle('invalid', !!state.filterError)

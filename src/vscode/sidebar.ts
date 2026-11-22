@@ -22,9 +22,10 @@ import {
 import {
   AUTO_EXPAND_FILES,
   countFiles,
-  coverageText,
-  folderNodes,
   isSearch,
+  type Repo,
+  repoNodes,
+  reviewerTrees,
   summaryNode,
   type ViewNode,
   type ViewState,
@@ -45,6 +46,12 @@ interface RootData {
 }
 
 const STATE_KEY = 'codeAssurance.filter'
+
+/** Normalized emails of the people with current confirmations in a file. */
+const reviewersOf =
+  (root: Root) =>
+  (sourcePath: string): string[] =>
+    root.store.currentFor(sourcePath).map((r) => normalizeEmail(r.author.email))
 
 /**
  * The Coverage view: filters on top and, below them, the coverage of every
@@ -319,24 +326,18 @@ export class CoverageView implements vscode.WebviewViewProvider {
       },
     )
 
-    const fileNodes =
-      roots.length === 1
-        ? folderNodes(0, trees[0]!.shown)
-        : roots.map(
-            (root, i): ViewNode => ({
-              id: `${i}:root`,
-              label: path.basename(root.rootDir),
-              description: coverageText(trees[i]!.full.coverage),
-              icon: 'repo',
-              children: folderNodes(i, trees[i]!.shown),
-            }),
-          )
+    const grouped = this.filter.groupByReviewer && this.filter.reviewer === null
+    const repos: Repo[] = roots.map((root, i) => ({
+      label: path.basename(root.rootDir),
+      full: trees[i]!.full,
+      shown: trees[i]!.shown,
+      reviewersOf: reviewersOf(root),
+    }))
+    const fileNodes = grouped
+      ? reviewerTrees(repos, this.reviewerCounts(roots), this.filter)
+      : repoNodes(repos, (r) => r.shown)
     const shown = countFiles(fileNodes)
     const nodes = [...fileNodes]
-    const people = this.reviewerNodes(roots)
-    if (people.length > 0) {
-      nodes.push({ id: 'reviewers', label: 'Reviewers', icon: 'people', children: people })
-    }
     const missing = this.missingNodes(roots)
     if (missing.length > 0) {
       nodes.push({
@@ -353,9 +354,29 @@ export class CoverageView implements vscode.WebviewViewProvider {
       active: true,
       summary,
       nodes,
-      autoExpand: isSearch(this.filter) && shown <= AUTO_EXPAND_FILES,
-      message: shown === 0 && isSearch(this.filter) ? 'No files match the filter.' : '',
+      autoExpand: (grouped || isSearch(this.filter)) && shown <= AUTO_EXPAND_FILES,
+      message:
+        shown > 0
+          ? ''
+          : grouped
+            ? 'No confirmations match the filter.'
+            : isSearch(this.filter)
+              ? 'No files match the filter.'
+              : '',
     }
+  }
+
+  /** People with current confirmations and how many they have, over all roots. */
+  private reviewerCounts(roots: Root[]): { name: string; email: string; count: number }[] {
+    const byEmail = new Map<string, { name: string; email: string; count: number }>()
+    for (const root of roots) {
+      for (const r of root.store.reviewers(this.includer(root))) {
+        const e = byEmail.get(r.email) ?? { name: r.name, email: r.email, count: 0 }
+        e.count += r.count
+        byEmail.set(r.email, e)
+      }
+    }
+    return [...byEmail.values()]
   }
 
   private treeOf(root: Root): { full: TreeFolder; shown: TreeFolder } {
@@ -365,44 +386,7 @@ export class CoverageView implements vscode.WebviewViewProvider {
       coverage: d?.coverage.get(p) ?? 'pending',
     }))
     const full = buildTree(files)
-    const reviewersOf = (p: string): string[] =>
-      root.store.currentFor(p).map((r) => normalizeEmail(r.author.email))
-    return { full, shown: pruneTree(full, fileMatcher(this.filter, reviewersOf)) }
-  }
-
-  /** Reviewers with the files they confirmed, narrowed by the reviewer and path filters. */
-  private reviewerNodes(roots: Root[]): ViewNode[] {
-    const compiled = compilePathFilter(this.filter.pathRegex)
-    const pathOk = compiled.ok ? compiled.test : (): boolean => true
-    const byEmail = new Map<string, { name: string; count: number; files: ViewNode[] }>()
-    roots.forEach((root, i) => {
-      for (const r of root.store.reviewers(this.includer(root))) {
-        if (this.filter.reviewer !== null && r.email !== this.filter.reviewer) continue
-        const entry = byEmail.get(r.email) ?? { name: r.name, count: 0, files: [] }
-        entry.count += r.count
-        for (const f of r.files) {
-          if (!pathOk(f.sourcePath)) continue
-          entry.files.push({
-            id: `${i}:r:${r.email}:${f.sourcePath}`,
-            label: f.sourcePath,
-            description: String(f.count),
-            icon: 'file',
-            action: { type: 'open', root: i, path: f.sourcePath },
-          })
-        }
-        byEmail.set(r.email, entry)
-      }
-    })
-    return [...byEmail]
-      .filter(([, r]) => r.files.length > 0)
-      .map(([email, r]) => ({
-        id: `reviewer:${email}`,
-        label: r.name,
-        description: `${r.count} confirmation(s)`,
-        tooltip: email,
-        icon: 'person',
-        children: r.files,
-      }))
+    return { full, shown: pruneTree(full, fileMatcher(this.filter, reviewersOf(root))) }
   }
 
   private missingNodes(roots: Root[]): ViewNode[] {
