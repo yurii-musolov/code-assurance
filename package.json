@@ -2,7 +2,7 @@
   "name": "code-assurance",
   "displayName": "Code Assurance",
   "description": "Sustained confirmation of code quality and correctness: people confirm the code they checked, take responsibility for it, and re-confirm it when it changes.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "yurii-musolov",
   "author": {
     "name": "Yurii Musolov"
