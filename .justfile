@@ -91,7 +91,9 @@ release level="patch":
     version="${version#v}"
     node scripts/changelog.mjs "$version"
     git switch -q -c "release/v$version"
-    git commit -qam "release: $version"
+    git commit -qa -m "release: $version" \
+      -m "Version $version. Changes, as listed in CHANGELOG.md:" \
+      -m "$(node scripts/changelog.mjs --notes "$version")"
     git push -q -u origin "release/v$version"
     gh pr create --base main --title "Release $version" \
       --body "Version $version with the changes listed under [$version] in CHANGELOG.md. After merging, run \`just publish\`."
