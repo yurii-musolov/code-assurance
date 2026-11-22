@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Coverage view: a tree per reviewer, chosen in the same list as a single
+  reviewer; it replaces the separate Reviewers section.
+
+### Changed
+
+- The confirmation history opens as a tab in the current editor group
+  instead of splitting the editor area.
+- Development and release notes moved from the README to CONTRIBUTING.md.
+
 ## [0.1.0]
 
 ### Added

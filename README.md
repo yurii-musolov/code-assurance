@@ -90,11 +90,15 @@ and the files they let through are listed right below them.
   repository-relative path. While a path or reviewer filter is set, folders
   open by themselves (up to 300 files).
 - The toggle inside the input keeps only **files with confirmations**.
-- **Reviewer** narrows the files and the reviewers list to one person.
+- The list below them chooses whose files the tree shows:
+  - **All reviewers in one tree**: one tree of every file;
+  - **A tree per reviewer**: a separate tree for every person with the
+    files they have confirmations in;
+  - **a single person**: only that person's files.
 
-Below the filters: the share of code lines confirmed, every tracked file
-with its coverage rolled up through folders, the reviewers with the files
-they confirmed, and confirmations of files that no longer exist. Filters
+Below the filters: the share of code lines confirmed, the files with their
+coverage rolled up through folders, and confirmations of files that no
+longer exist. Filters
 never change a percentage. Blank lines are not counted. The view title has
 buttons to hide the marks in editors while you write code, refresh, clear
 the filters and collapse all folders; **Code Assurance: Filter coverage**

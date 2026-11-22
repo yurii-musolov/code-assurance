@@ -170,21 +170,57 @@ describe('coverage page', () => {
     doc.getElementById('hide')!.click()
     expect(page.posted.at(-1)).toEqual({
       type: 'filter',
-      filter: { hideUnconfirmed: false, reviewer: '', pathRegex: '' },
+      filter: { hideUnconfirmed: false, reviewer: '', groupByReviewer: false, pathRegex: '' },
     })
     const reviewer = doc.getElementById('reviewer') as HTMLSelectElement
     expect([...reviewer.options].map((o) => o.textContent)).toEqual([
-      'All reviewers',
+      'All reviewers in one tree',
+      'A tree per reviewer',
+      '──────────',
       'Ann <ann@x>',
     ])
+    expect(reviewer.options[2]!.disabled).toBe(true)
     reviewer.value = 'ann@x'
     reviewer.dispatchEvent(new page.window.Event('change'))
-    expect(page.posted.at(-1)).toMatchObject({ filter: { reviewer: 'ann@x' } })
+    expect(page.posted.at(-1)).toMatchObject({
+      filter: { reviewer: 'ann@x', groupByReviewer: false },
+    })
+    reviewer.value = ':group'
+    reviewer.dispatchEvent(new page.window.Event('change'))
+    expect(page.posted.at(-1)).toMatchObject({ filter: { reviewer: '', groupByReviewer: true } })
     const input = doc.getElementById('path') as HTMLInputElement
     input.value = '^src/'
     input.dispatchEvent(new page.window.Event('input'))
     await new Promise((r) => setTimeout(r, 300))
     expect(page.posted.at(-1)).toMatchObject({ filter: { pathRegex: '^src/' } })
+  })
+
+  it('selects the grouped view and opens reviewer trees by default', () => {
+    const person = (email: string, children: ViewNode[]): ViewNode => ({
+      id: `reviewer:${email}`,
+      label: email,
+      icon: 'person',
+      open: true,
+      children,
+    })
+    page.send({
+      filter: { ...DEFAULT_FILTER, groupByReviewer: true },
+      nodes: [
+        person('ann@x', [{ ...NODES[0]!, id: 'ann@x|0:d:src' }]),
+        person('bob@x', [file('README.md')]),
+      ],
+    })
+    const reviewer = page.window.document.getElementById('reviewer') as HTMLSelectElement
+    expect(reviewer.value).toBe(':group')
+    expect(page.rows()).toEqual([
+      '50% of code lines confirmed *',
+      'ann@x',
+      '  src',
+      'bob@x',
+      '  README.md',
+    ])
+    page.row('ann@x').click()
+    expect(page.rows()).toEqual(['50% of code lines confirmed', 'ann@x *', 'bob@x', '  README.md'])
   })
 
   it('shows a filter error and the empty message', () => {

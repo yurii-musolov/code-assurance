@@ -5,6 +5,9 @@ import {
   coverageText,
   folderNodes,
   isSearch,
+  type Repo,
+  repoNodes,
+  reviewerTrees,
   summaryNode,
   type ViewNode,
 } from '../../src/core/view'
@@ -69,5 +72,60 @@ describe('view helpers', () => {
         { pending: false, files: 0, truncatedAt: null, corrupt: 0 },
       ).label,
     ).toBe('No code lines')
+  })
+})
+
+describe('repository and reviewer trees', () => {
+  const ann = (p: string) => p.startsWith('src/')
+  const repo = (label: string, paths: string[], who: (p: string) => string[]): Repo => {
+    const full = buildTree(paths.map((path) => ({ path, coverage: { confirmed: 1, total: 2 } })))
+    return { label, full, shown: full, reviewersOf: who }
+  }
+  const a = repo('a', ['src/x.ts', 'src/y.ts', 'docs/z.md'], (p) =>
+    ann(p) ? ['ann@x'] : p === 'docs/z.md' ? ['bob@x'] : [],
+  )
+  const b = repo('b', ['lib/q.go'], (p) => (p === 'lib/q.go' ? ['bob@x'] : []))
+  const people = [
+    { name: 'Ann', email: 'ann@x', count: 3 },
+    { name: 'Bob', email: 'bob@x', count: 2 },
+    { name: 'Eve', email: 'eve@x', count: 1 },
+  ]
+  const filter = { hideUnconfirmed: false, reviewer: null, pathRegex: '' }
+
+  it('lists the folders of a single repository directly', () => {
+    expect(shape(repoNodes([a], (r) => r.shown))).toEqual([
+      ['docs', ['z.md']],
+      ['src', ['x.ts', 'y.ts']],
+    ])
+  })
+
+  it('puts several repositories under their own nodes', () => {
+    const nodes = repoNodes([a, b], (r) => r.shown)
+    expect(nodes.map((n) => [n.id, n.label, n.description])).toEqual([
+      ['0:root', 'a', '50% (3/6)'],
+      ['1:root', 'b', '50% (1/2)'],
+    ])
+  })
+
+  it('gives every reviewer a tree of their files, open by default', () => {
+    const trees = reviewerTrees([a, b], people, filter)
+    expect(trees.map((t) => [t.label, t.description, t.open])).toEqual([
+      ['Ann', '3 confirmation(s) · 2 file(s)', true],
+      ['Bob', '2 confirmation(s) · 2 file(s)', true],
+    ])
+    expect(shape(trees[1]!.children!)).toEqual([
+      ['a', [['docs', ['z.md']]]],
+      ['b', [['lib', ['q.go']]]],
+    ])
+    // A repository without the person's files is left out of their tree.
+    expect(shape(trees[0]!.children!)).toEqual([['a', [['src', ['x.ts', 'y.ts']]]]])
+    // The same file in two trees gets two ids.
+    expect(trees[0]!.children![0]!.id).toBe('ann@x|0:root')
+  })
+
+  it('applies the path filter inside each reviewer tree', () => {
+    const trees = reviewerTrees([a], people, { ...filter, pathRegex: 'y\\.ts$' })
+    expect(trees.map((t) => t.label)).toEqual(['Ann'])
+    expect(shape(trees[0]!.children!)).toEqual([['src', ['y.ts']]])
   })
 })
