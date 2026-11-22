@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-22
+
 ### Fixed
 
 - Rust: "Confirm enclosing type" finds type aliases (`pub type Id = u32;`),
